@@ -149,4 +149,4 @@ services:
       - key: REVERB_SCHEME
         value: https
       - key: REVERB_ALLOWED_ORIGIN
-        value: https://tableplay-api.onrender.com
+        value: tableplay-api.onrender.com
