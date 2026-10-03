@@ -1,0 +1,9 @@
+{
+    "algorithm": "Ed25519",
+    "key_id": "tableplay-market-v1",
+    "public_key": "LDuSLOvJXkq8aFIBdjGurkQIl39o7NM/TWSl05pTr1U=",
+    "public_key_sha256": "ba19a3d79e744b92b07dda9df1109f8f537204663983bc54418f4446c47fa9ba",
+    "trusted_public_keys": {
+        "tableplay-market-v1": "LDuSLOvJXkq8aFIBdjGurkQIl39o7NM/TWSl05pTr1U="
+    }
+}

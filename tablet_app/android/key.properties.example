@@ -1,0 +1,5 @@
+# Both applications must use the same protected TablePlay release keystore.
+storeFile=C\:/secure/tableplay-release.p12
+storePassword=replace-with-private-password
+keyPassword=replace-with-private-password
+keyAlias=tableplay

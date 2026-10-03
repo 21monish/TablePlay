@@ -1,0 +1,12 @@
+@extends('layouts.app')
+@section('title', 'Games')
+@section('eyebrow', 'Administration')
+@section('page-title', 'Game library')
+
+@section('content')
+<div class="page-heading"><div><h2>Guest entertainment</h2><p>Control which games appear after counter confirmation. The server remains authoritative for unlocks and timer expiry.</p></div></div>
+<div class="content-grid content-grid--2">
+    <section class="card"><div class="card__header"><div><h2>Available games</h2><p>{{ $games->where('is_active',true)->count() }} enabled</p></div></div><div class="card__body stack">@forelse($games as $game)<article class="game-row"><span class="game-row__icon"><x-icon name="game" :size="23" /></span><span class="game-row__copy"><strong>{{ $game->name }}</strong><small>{{ $game->description ?: str($game->player_mode)->title().' player mode' }}</small><span>{{ $game->game_path }}</span></span><x-status :value="$game->is_active ? 'active' : 'disabled'" /><form method="post" action="{{ route('admin.games.toggle',$game) }}">@csrf<button class="button button--secondary button--small">{{ $game->is_active ? 'Disable' : 'Enable' }}</button></form></article>@empty<x-empty-state icon="game" title="No games configured" />@endforelse</div></section>
+    <section class="card"><div class="card__header"><div><h2>Add game</h2><p>Register a game route exposed by the tablet client</p></div></div><form class="card__body" method="post" action="{{ route('admin.games.store') }}">@csrf<div class="form-grid"><label class="field">Game name<input name="name" value="{{ old('name') }}" required></label><label class="field">Slug<input name="slug" value="{{ old('slug') }}" placeholder="memory-match" required></label><label class="field">Players<select name="player_mode"><option value="one">One player</option><option value="two">Two players</option><option value="four">Four players</option></select></label><label class="field">Display order<input type="number" name="sort_order" min="0" value="{{ old('sort_order',0) }}" required></label><label class="field field--full">Game path<input name="game_path" value="{{ old('game_path') }}" placeholder="/games/memory-match" required></label><label class="field field--full">Description<textarea name="description">{{ old('description') }}</textarea></label></div><div class="form-actions"><button class="button" type="submit"><x-icon name="plus" :size="16" /> Add game</button></div></form></section>
+</div>
+@endsection

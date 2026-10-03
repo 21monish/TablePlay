@@ -1,0 +1,5 @@
+# Copy this file to key.properties. Never commit the real file or keystore.
+storeFile=C\:/secure/tableplay-release.p12
+storePassword=replace-with-private-password
+keyPassword=replace-with-private-password
+keyAlias=tableplay

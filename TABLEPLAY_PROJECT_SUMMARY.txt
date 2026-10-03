@@ -1,0 +1,433 @@
+TABLEPLAY - COMPLETE PROJECT SUMMARY
+====================================
+
+Updated: 19 September 2026
+Source: C:\xampp\htdocs\TablePlay
+Database: tableplay
+Current release: TablePlay Server/Installer 2.5.6
+Staff apps: 1.9.2 (Android build 2014 and Windows build 14)
+Customer table app: 1.12.1 (Android build 2015)
+Source status: verified
+Fresh production installation status: exact-payload lifecycle passed; final clean-PC acceptance test remains required
+
+
+1. PURPOSE
+----------
+
+TablePlay is a smart restaurant ordering, service, billing, and table-gaming
+platform. A restaurant server runs on a Windows laptop or counter PC. Staff
+desktops/phones and customer tablets connect through the restaurant's private
+Wi-Fi network. Normal restaurant operation continues locally without internet.
+
+The product contains:
+
+- Laravel web portal, dashboards, REST API, Reverb events, queues, and scheduler.
+- Private MariaDB database in the one-click Windows installation.
+- One role-based Staff Flutter app for Android and Windows.
+- One separate Customer Flutter app for Android table devices.
+- TablePlay Server Manager, updater, backup/restore, repair, and uninstaller.
+- Optional cloud licensing architecture for commercial subscriptions.
+
+
+2. REAL RESTAURANT WORKFLOW
+---------------------------
+
+1. Admin creates tables, staff accounts, menu categories, dishes, and games.
+2. A Customer tablet is paired securely to one table using a single-use QR.
+3. The guest opens a visit, browses photos/descriptions, and places an order.
+4. Counter confirms or rejects the pending order.
+5. Confirmation sends the ticket to Kitchen and starts/restarts that table's
+   server-controlled game timer.
+6. Kitchen moves the order through Confirmed, Preparing, Ready, and Served.
+7. Waiter handles waiter/water/bill requests and can take an order by selecting
+   a table when that table has no Customer tablet.
+8. Counter generates the bill, accepts cash payment, prints the receipt, and
+   closes the visit.
+9. Payment/closure stops game access immediately for only that table.
+
+Tables, orders, requests, sessions, and game timers are isolated from each
+other. Confirming Table 1 never unlocks Table 2.
+
+
+3. ROLES
+--------
+
+Platform Super Admin:
+
+- Manages commercial restaurants, plans, subscriptions, activation keys,
+  installation transfer/deactivation, and offline signed licence files.
+- Is separate from restaurant staff access.
+
+Restaurant Admin:
+
+- Dashboard, tables, tablet pairing, staff, menu, games, settings, reports,
+  audit history, health, automation, licences, and application updates.
+
+Counter:
+
+- Incoming orders, confirmation/rejection, requests, billing, cash payment,
+  receipts, table closure, and game timer extend/stop controls.
+
+Kitchen:
+
+- Live ticket queue, customer instructions, preparation status/timers, ready
+  notifications, and served status.
+
+Waiter:
+
+- Guest requests, ready orders, floor/table overview, bill requests, table
+  visits, and waiter-entered orders for a selected table.
+
+Customer:
+
+- Menu, photos, descriptions, cart, order status, table services, and games.
+
+
+4. BRANDING AND MENU IMAGES
+---------------------------
+
+TablePlay uses two simple uploaded images:
+
+- Restaurant logo: guest-facing restaurant identity and receipts.
+- TablePlay app logo: website/system brand, Staff app, Customer app, and favicon.
+
+Admin can upload both from Restaurant Settings, the first-time setup guide, or
+the Staff app. The browser favicon is served through a no-cache endpoint, so a
+new app logo replaces the old favicon without waiting for a long browser cache.
+Flutter apps refresh branding automatically while preserving login and pairing.
+
+Menu management supports:
+
+- JPEG, PNG, or WebP photo upload up to 5 MB.
+- Photo upload/replacement from the website and Staff app.
+- Safe deletion of the superseded managed image.
+- Short and full descriptions, ingredients, allergens, calories, spice level,
+  preparation time, regular/offer price, bestseller/recommended flags, and
+  structured customizations.
+- Customer tablets refresh menu data/photos automatically (normally within one
+  minute), without reinstalling or clearing pairing.
+
+An uploaded logo changes in-app branding, but Android launcher icons and the
+Windows EXE icon are signed build-time assets. Changing those operating-system
+icons still requires a new signed app build.
+
+
+5. GAMES
+--------
+
+The catalog contains five one-player, four two-player, and four four-player
+games. Dinosaur Dash is a native, frame-rate-independent runner. Balloon Ascent
+adds smooth drag/keyboard steering, safe-path spike gates, +10 bubbles, progressive
+difficulty, Magnet/Slow/Shield power-ups, local best score and server-authorized
+result submission. The artwork and branding are original TablePlay assets rather
+than copied Google game assets. Every catalog slug opens its intended screen.
+Automated Flutter tests cover representative 1-, 2-, and 4-player games plus the
+Dinosaur Dash and Balloon Ascent engines, collision rules and controls.
+
+- Access is controlled by the local server per table.
+- Games remain locked before Counter confirmation.
+- Confirmation starts or restarts the configured duration.
+- Counter can extend or stop an active timer.
+- Expired timers cannot be resurrected.
+- Billing completion stops access immediately.
+
+
+6. NETWORK AND API
+------------------
+
+Default local services:
+
+- Website: http://LAPTOP_IP:8000
+- API: http://LAPTOP_IP:8000/api/v1
+- Realtime: ws://LAPTOP_IP:8080
+- Private installed database: 127.0.0.1:3310 only
+
+All devices must be on the same private router/hotspot and client isolation must
+be disabled. Windows should classify the restaurant Wi-Fi as Private. A fixed
+DHCP reservation for the server laptop is recommended so app URLs do not change.
+
+
+7. SESSIONS AND SECURITY
+------------------------
+
+- Staff app login is saved until the employee explicitly signs out.
+- Customer pairing is saved until Admin/unpair/reset.
+- Laravel Sanctum tokens protect app APIs.
+- Role middleware protects every staff workspace.
+- Native browser alert/confirm/prompt boxes are not used; TablePlay uses branded
+  dialogs and non-blocking toast/SnackBar feedback.
+- Android releases retain the same application IDs and production certificate.
+- Current certificate SHA-256:
+  4adba0c171bb6a0ec83246d28a2c37a911efe4ee9921d097d3825d7e9c061a0e
+- Signing keystores/passwords must never be distributed with source or installer.
+- Change all default development/super-admin credentials before a real sale.
+
+
+8. COMMERCIAL LICENSING
+-----------------------
+
+Implemented commercial licensing includes:
+
+- Free Trial, Simple, Best, Pro, and Premium plans with signed features and limits.
+- One stable installation UUID and device fingerprint per restaurant server.
+- Online activation and synchronization using one-time hashed activation keys.
+- Restaurant-generated, self-signed offline activation requests (.tpr).
+- Cloud verification of request signature, identity, age, and replay state.
+- Ed25519-signed offline licenses (.tpl) bound to the exact request, installation,
+  computer, subscription, plan, and monotonic license revision.
+- Rejection of tampered, wrong-device, substituted-key, replayed, and stale files
+  while preserving the currently valid license.
+- Identical re-download of the originally issued signed license.
+- Private signing material stored only in the secured Cloud environment.
+- Only the public verification key is installed on restaurant servers.
+- Current public-key fingerprint:
+  ba19a3d79e744b92b07dda9df1109f8f537204663983bc54418f4446c47fa9ba
+- Pairing/table/session enforcement through locally verified entitlements.
+- Local ordering remains operational without internet while the license is valid.
+- Central web/API enforcement for Customer app access, table quotas, games and
+  timers, waiter ordering, advanced reports, and automation.
+- Trial/Simple/Best/Pro/Premium limits are rechecked on every protected request;
+  a downgrade blocks overflow tablets immediately and an upgrade restores them.
+- Pairing quota checks are transaction-serialized, secure QR tokens are one-use,
+  and legacy public registration/table-code pairing is retired.
+- Active games close on billing, unpairing, token revocation, plan removal,
+  missing table sessions, or the last server-issued expiry while offline.
+- License provenance fails closed: signed cloud/offline records cannot be made
+  trusted by changing their database source, status, features, or limits.
+- Kitchen completion, billing/payment, verified backups, and game-stop controls
+  remain available as safety operations during plan or license transitions.
+
+Offline activation requires no internet or Cloud URL. The .tpr and .tpl files can
+be transferred by USB. Offline files use a maximum 30-day renewal lease by default,
+so suspension or plan changes take effect no later than the next signed renewal;
+a deliberately rolled-back server clock disables signed entitlements. Online
+commercial operation still requires a separately secured HTTPS Cloud deployment.
+
+
+9. APPLICATION UPDATE CENTER
+----------------------------
+
+Admin can upload verified Staff Android, Customer Android, and Staff Windows
+packages. The server verifies Android package ID, version/build, signature, and
+certificate continuity, plus Windows ZIP structure and SHA-256.
+
+Release channels:
+
+- Stable: normal restaurant devices (default).
+- Pilot: selected test restaurants/devices.
+- Beta: internal testing.
+- Deterministic percentage rollout allows gradual 1-100% deployment.
+
+Only one published release exists per app/platform/channel. Existing devices
+remain on Stable unless deliberately configured otherwise.
+
+Release 2.5.4 applies a coordinated visual and usability upgrade without
+changing the proven ordering, billing, licensing or timer rules:
+
+- Staff has a clearer desktop/Android visual hierarchy, role-aware operational
+  context, plan/server/connection visibility, richer status cards and a refined
+  login experience with secure password visibility control.
+- Customer pairing is now a guided three-step flow with actionable timeout and
+  network help.
+- Customer home always shows table, guest, order, cart, network and server-owned
+  game-timer state in one compact session strip.
+- Menu browsing has clearer filters and result counts, larger images, offer and
+  category badges, preparation/calorie/spice details, and accessible image labels.
+- Game Lounge filters the catalog by All, 1-player, 2-player and 2-4-player mode
+  with live counts while preserving server-controlled access.
+
+Release 2.5.6 is the Staff performance, validation and cleanup release:
+
+- Rebuilt the Admin overview with compact metric tiles and responsive live-floor
+  cards so table names, seats and statuses remain readable at desktop widths.
+- Added tested password/PIN visibility, inline required-field validation and
+  bounded login fields in the Staff app.
+- Parallelized branding and workspace requests, reduced static Admin polling,
+  prevented overlapping loads and removed an unused per-table order relationship.
+- Enabled PHP OPcache and realpath caching in installed restaurant runtimes.
+- Added login throttling and stricter server-side validation for credentials,
+  staff roles, usernames, table codes, menu values, settings and game paths.
+- Restaurant Admins can no longer list, create or disable platform Super Admins.
+- Removed superseded release packages and reproducible build/cache directories
+  after the final 2.5.6 package and lifecycle verification.
+
+Release 2.5.5 was the connection-timeout hotfix:
+
+- Removed the obsolete 10.69.104.253 runtime fallback URL from both apps.
+- Fresh Staff Windows installs default safely to 127.0.0.1; Staff Android asks
+  for the real laptop API address instead of silently trying a stale address.
+- Customer tablets obtain the server exclusively from a secure pairing QR.
+- Staff login and Customer pairing reject localhost, 0.0.0.0 and malformed LAN
+  addresses where those addresses cannot work.
+- Raw Dart TimeoutException/SocketException messages are replaced with concise,
+  actionable Wi-Fi, laptop-IP and port-8000 guidance.
+- Opening a game pauses the hidden Game Lounge poll, preventing duplicate
+  /games/access traffic while the active game guard continues timer enforcement.
+
+
+10. ONE-CLICK WINDOWS INSTALLATION
+----------------------------------
+
+Current installer:
+
+C:\xampp\htdocs\TablePlay\dist\installer\TablePlay-Setup-v2.5.6.exe
+
+It bundles:
+
+- Laravel production server and dependencies.
+- Portable PHP and private MariaDB.
+- TablePlayServer Windows service.
+- Reverb, queue worker, and scheduler.
+- Server Manager, repair/upgrade, backup/restore, and uninstaller.
+- Staff Android 1.9.2 (build 2014).
+- Customer Android 1.12.1 (build 2015).
+- Staff Windows 1.9.2 (build 14).
+
+Installer hardening through 2.5.6:
+
+- Server Manager launches the temporary uninstaller from the Windows temp
+  directory, so it no longer locks C:\Program Files\TablePlay.
+- Service Host uses PHP's direct built-in server rather than an artisan parent
+  process that could leave duplicate child servers after restart.
+- Setup/upgrade creates a fresh public storage link, so logos and menu photos
+  work in production installations.
+- Development public-storage files are excluded from the installer payload.
+- Upgrade always regenerates production PHP configuration and verifies required
+  extensions before Laravel migrations run.
+- Installer failures include stdout and stderr and are retained in
+  logs\setup-commands.log for diagnosis.
+- Fresh install, upgrade and rollback are stage-aware; incomplete installations
+  can be recovered without treating them as a healthy existing installation.
+- Upgrade backups are created only after services and database writes are
+  quiesced, and SQL backup checksums are verified before a restore can modify data.
+- Critical bundled runtimes, services, apps and server files are verified against
+  the build manifest before installed files are touched.
+- Success requires database/schema access, Laravel HTTP health, Reverb, queue and
+  scheduler supervision, branding API response and a valid public-storage link.
+- The exact v2.5.6 staged payload passed an isolated fresh-install followed by an
+  in-place-upgrade lifecycle, including retained upload and database verification.
+- Interrupted first-time installations are marked before payload copying. On the
+  next run, their complete directory is moved intact to
+  C:\ProgramData\TablePlay\Recovery before setup restarts; it is never silently
+  deleted or mistaken for a completed restaurant.
+- Repair recreates a missing Windows service, stops orphaned TablePlay-owned PHP
+  processes before replacement, waits for the service's full startup budget and
+  validates an older restored version with backward-compatible rollback checks.
+- Restaurant MariaDB uses the dedicated tableplay_app account on localhost only;
+  setup no longer gives Laravel database-root credentials.
+- Setup enables and cryptographically tests Sodium before installation succeeds.
+- Setup installs only the trusted Ed25519 public key and removes any legacy private
+  signing-key setting from restaurant environments.
+- The build uses the verified cached .NET 9.0.19 self-contained runtime so all
+  Windows components are reproducible without the stalled partial 9.0.20 pack.
+
+The EXE has a generated SHA-256 file but is not Authenticode-signed unless a
+production Windows code-signing certificate is applied after the build. Windows
+SmartScreen warnings are expected until TablePlay obtains and uses that
+certificate. Do not market the EXE as fully signed before this step.
+
+
+11. VERIFIED RELEASE FILES
+--------------------------
+
+C:\xampp\htdocs\TablePlay\dist\TablePlay-Staff-Android-arm64-v1.9.2-release.apk
+C:\xampp\htdocs\TablePlay\dist\TablePlay-Customer-Android-v1.12.1-release.apk
+C:\xampp\htdocs\TablePlay\dist\TablePlay-Staff-Windows-x64-v1.9.2.zip
+C:\xampp\htdocs\TablePlay\dist\installer\TablePlay-Setup-v2.5.6.exe
+
+Installer v2.5.6 SHA-256:
+29e6b00b3b15d187736b87a7c95297765641bc29972b29d75c9ff1ca853fa618
+
+Staff Android 1.9.2 SHA-256:
+742a71b7ce6865645471cc9080a5029a8164d435758c3510ad6770387e6d10eb
+
+Customer Android 1.12.1 SHA-256:
+8cc02ed5024fa39fd034cefb94a7c92e3f2cde571e3e81ca290bf64e9ef701db
+
+Staff Windows 1.9.2 SHA-256:
+c57d59e1c74d9147fd4b1c7a420efee8a192798d804f0b3e93777212b859974b
+
+Each file has a matching .sha256 file.
+
+
+12. VERIFICATION COMPLETED
+--------------------------
+
+- Laravel: 129 tests passed, 981 assertions.
+- Offline request, signature, device binding, replay protection, revision ordering,
+  clock-rollback detection, renewable lease, and entitlement-integrity tests passed.
+- Staff Flutter tests: 5 passed.
+- Customer Flutter tests: 27 passed.
+- Staff Flutter analyzer: no issues.
+- Customer Flutter analyzer: no issues.
+- Package Inspector: both signed APKs and Staff Windows ZIP passed.
+- Staff APK: com.tableplay.tableplay_staff, 1.9.2, build 2014.
+- Customer APK: com.tableplay.tableplay_tablet, 1.12.1, build 2015.
+- Both APK certificate digests match the previous production releases.
+- Server Manager, Service Host, and Setup compile with zero .NET errors/warnings.
+- Installer 2.5.6 built successfully (466,790,947 bytes; approximately 445 MiB).
+- Installer regression tests passed for interrupted-install classification and
+  database-file recovery, junction safety, legacy uploaded-file migration and
+  required PHP extensions.
+- Complete exact-payload fresh-install and in-place-upgrade lifecycle passed.
+
+Required before commercial delivery:
+
+- Test install, repair, upgrade, backup/restore, and uninstall on a clean Windows
+  11 computer/VM that never had XAMPP or TablePlay.
+- Run a multi-table pilot on the target router/printer/tablets.
+- Authenticode-sign the final installer.
+- Configure/secure the production cloud licensing deployment.
+- Complete legal/privacy/support documentation and recovery procedures.
+
+
+13. INSTALLATION PROCESS (FINAL STEPS)
+--------------------------------------
+
+Fresh server installation:
+
+1. Copy TablePlay-Setup-v2.5.6.exe and its .sha256 file to the restaurant PC.
+2. Verify the SHA-256 before running it.
+3. Right-click the installer and choose Run as administrator.
+4. Enter the restaurant name, Admin email, and a strong unique Admin password.
+5. Click Install and wait for database, services, apps, and firewall setup.
+6. Click Launch TablePlay and sign in as Admin.
+7. Complete Admin > Setup: identity/logos/tax, tables, staff, apps, and pairing.
+8. Connect all devices to the same Private Wi-Fi network.
+9. Download Staff Windows/Android and Customer Android from the portal/QR page.
+10. Pair each Customer tablet by scanning its table's single-use QR.
+11. Run one complete test order through Counter, Kitchen, Waiter, games, bill,
+    cash payment, receipt, and table closure.
+12. Create and verify the first backup before serving real customers.
+
+Regular server update/repair:
+
+1. Create a verified Server Manager backup.
+2. Run the newer TablePlay-Setup.exe as administrator.
+3. Choose Upgrade / Repair; do not uninstall for a normal update.
+4. Let migration, release publishing, service restart, and health check finish.
+5. Confirm Admin login, device connectivity, menu photos, and one test order.
+
+App installation/update:
+
+1. Open Server Manager > App QR codes or Admin > App Updates.
+2. Android: download the matching APK, allow installation from this local
+   source when prompted, and install over the existing app.
+3. Do not uninstall first; matching package ID/certificate preserves app data.
+4. Windows: download the Staff ZIP/installer through the portal/updater and use
+   Download and Restart when offered.
+5. Confirm Staff login and Customer pairing remain saved after the update.
+
+Offline activation:
+
+1. Upgrade/install the restaurant server using TablePlay-Setup-v2.5.6.exe.
+2. On the restaurant server, open Admin > License and download the .tpr request.
+3. Transfer the .tpr file to the secured Super Admin computer by USB.
+4. Open Super Admin > Restaurant Customers > Offline activation.
+5. Select the customer subscription, upload the .tpr, and issue the license.
+6. Download the generated .tpl file and transfer it back by USB.
+7. On the restaurant server, import the .tpl from Admin > License.
+8. Confirm the expected plan, status, limits, and expiry are displayed.
+9. Never copy the Cloud .env or private signing key to a restaurant computer.
+
+End of summary.

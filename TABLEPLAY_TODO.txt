@@ -1,0 +1,425 @@
+TABLEPLAY DEVELOPMENT TODO
+==========================
+
+Project: TablePlay
+Purpose: Track only unfinished work required for a secure commercial launch.
+Last reviewed: 22 September 2026
+
+
+RELEASE 2.5.6 STAFF PERFORMANCE AND VALIDATION (COMPLETED 19 SEPTEMBER 2026)
+--------------------------------------------------------------------------------
+
+[x] Replace oversized overview metrics with compact responsive tiles.
+[x] Replace fixed 210 px live-floor cards with readable responsive table cards.
+[x] Verify Staff login password/PIN show-hide behavior and inline required-field errors.
+[x] Parallelize workspace/branding loads and slow polling on static Admin sections.
+[x] Remove unused per-table order eager loading from Admin overview responses.
+[x] Enable and smoke-test PHP OPcache and realpath caching in installed runtimes.
+[x] Throttle login routes and harden credential, role, username, table, menu, setting and game validation.
+[x] Prevent restaurant Admin accounts from listing, creating or disabling platform Super Admin accounts.
+[x] Pass 129 Laravel tests/981 assertions, 5 Staff tests, clean analysis and package inspection.
+[x] Build and lifecycle-test Staff 1.9.2 and TablePlay-Setup-v2.5.6.
+[x] Remove superseded packages and reproducible build/cache directories while preserving private data.
+
+
+RELEASE 2.5.5 CONNECTION TIMEOUT HOTFIX (COMPLETED 19 SEPTEMBER 2026)
+------------------------------------------------------------------------
+
+[x] Remove obsolete restaurant-specific fallback IP addresses from both apps.
+[x] Default Staff Windows safely to local server and require the laptop IPv4 address on Staff Android.
+[x] Keep Customer server configuration QR-only and reject unusable laptop-only QR addresses.
+[x] Replace raw timeout/socket exceptions with actionable local-network guidance.
+[x] Prevent the hidden Game Lounge and active game from polling game access simultaneously.
+[x] Build Staff Android 1.9.1/build 2013, Staff Windows 1.9.1/build 13 and Customer Android 1.12.1/build 2015.
+[x] Preserve Android application IDs and production signing-certificate continuity.
+[x] Pass both Flutter analyzers, 5 Staff tests, 27 Customer tests and the real package gate.
+[x] Pass 127 Laravel tests/967 assertions and the exact-payload installer lifecycle.
+[x] Build TablePlay-Setup-v2.5.5.exe with its SHA-256 sidecar.
+
+
+RELEASE 2.5.4 STAFF AND CUSTOMER EXPERIENCE (COMPLETED 18 SEPTEMBER 2026)
+----------------------------------------------------------------------------
+
+[x] Apply one consistent polished TablePlay component system to Staff and Customer apps.
+[x] Add Staff role, server, plan, connection and last-refresh context across operational pages.
+[x] Improve Staff sign-in, password visibility, validation, status cards and responsive desktop behavior.
+[x] Add a guided Customer QR-pairing flow with secure-token and timeout/network guidance.
+[x] Add a persistent Customer session strip for table, guests, orders, cart, network and game timer.
+[x] Upgrade menu browsing with result counts, clearer filters, larger images, offer/category badges and food metadata.
+[x] Add Game Lounge player-mode filters with live counts without changing server-controlled access.
+[x] Build Staff Android 1.9.0/build 2012, Staff Windows 1.9.0/build 12 and Customer Android 1.12.0/build 2014.
+[x] Preserve both Android package IDs and the existing production signing certificate.
+[x] Pass 127 Laravel tests/967 assertions, 5 Staff tests, 27 Customer tests and both Flutter analyzers.
+[x] Build TablePlay-Setup-v2.5.4.exe and pass the exact-payload fresh-install and in-place-upgrade lifecycle.
+
+
+RELEASE 2.3.0 PRODUCTION HARDENING (COMPLETED 30 AUGUST 2026)
+------------------------------------------------------------
+
+[x] Bundle and silently install Microsoft's signed Visual C++ x64 runtime before PHP starts.
+[x] Stop installer builds when the required Windows runtime package is missing.
+[x] Add an actionable installer error when Windows rejects the prerequisite.
+[x] Compile the updated Windows installer with zero compiler errors.
+[x] Clear stale Laravel configuration and pass 77 backend tests (464 assertions).
+[x] Resolve all Staff Flutter analyzer findings; both Flutter apps now analyze cleanly.
+[x] Build TablePlay-Setup-v2.3.0.exe and generate its SHA-256 sidecar.
+[x] Correct Laravel service routing so the production health endpoint loads public/index.php.
+[x] Quote the Windows service executable path under Program Files.
+[x] Make upgrade, rollback and uninstall deletion safe for Laravel public/storage junctions.
+[x] Wait for the Windows service to stop fully before replacing application files.
+[x] Restore the public storage link automatically after an upgrade rollback.
+[x] Add and pass a real Windows junction regression test that preserves linked restaurant data.
+[x] Build the consolidated repair release TablePlay-Setup-v2.3.3.exe.
+
+
+RELEASE 2.4.0 INSTALLER RECOVERY HARDENING (COMPLETED 1 SEPTEMBER 2026)
+---------------------------------------------------------------------
+
+[x] Regenerate the production php.ini during every upgrade and verify mbstring, PDO MySQL and OpenSSL before Laravel runs.
+[x] Include stdout and stderr plus a persistent command transcript in installer failures.
+[x] Make fresh installation, upgrade, rollback and partial-install recovery transactional and stage-aware.
+[x] Quiesce services and the private database before creating a checksum-protected upgrade backup.
+[x] Verify database readiness, schema access, Reverb, supervised workers, branding API and public-storage link before success.
+[x] Preserve uploaded files while converting legacy public/storage folders into verified links.
+[x] Add safe service reconfiguration, startup checkpoints, child-process crash detection and rollback health verification.
+[x] Validate hashes and sizes of critical bundled PHP, MariaDB, service, prerequisite, app and server files before installation.
+[x] Pass junction, legacy-storage and PHP-extension regression tests.
+[x] Pass the complete isolated fresh-install and in-place-upgrade lifecycle using the exact staged production payload.
+[x] Build TablePlay-Setup-v2.4.0.exe with a matching SHA-256 sidecar.
+[x] Mark setup before the first payload copy so a power loss cannot create an unrecognized partial installation.
+[x] Preserve every interrupted installation intact under ProgramData\TablePlay\Recovery instead of deleting it.
+[x] Repair missing Windows service registration and terminate only orphaned processes running below the TablePlay install root.
+[x] Align setup health checks with the full clean-PC service startup budget and use backward-compatible rollback health checks.
+
+
+RELEASE 2.5.0 SECURE OFFLINE ACTIVATION (COMPLETED 2 SEPTEMBER 2026)
+------------------------------------------------------------------
+
+[x] Add a signed restaurant activation-request (.tpr) export with a unique installation key and device fingerprint.
+[x] Verify request signature, identity, age and replay state before Cloud accepts it.
+[x] Issue Ed25519-signed offline licence (.tpl) files bound to the request, installation, computer, subscription and revision.
+[x] Sign exact plan features and limits so local plan records cannot increase an entitlement.
+[x] Reject tampered, substituted-key, wrong-device, expired, replayed and stale-revision files without replacing the current valid licence.
+[x] Store issued licence files exactly as signed for safe identical re-download.
+[x] Make request generation transactional, CSRF-protected and idempotent, with immutable request re-downloads.
+[x] Use stable machine identity, detect clock rollback and bound offline access to a renewable 30-day lease by default.
+[x] Keep the private signing key only in the secured Cloud environment and package only the public verification key.
+[x] Preserve trusted historical public keys safely during signing-key rotation.
+[x] Provision and verify Sodium plus the public trust key during setup and upgrade.
+[x] Replace database root access with a dedicated localhost-only tableplay_app account.
+[x] Pass 107 Laravel tests with 629 assertions and the exact-payload fresh-install and upgrade lifecycle.
+[x] Build TablePlay-Setup-v2.5.0.exe with its matching SHA-256 sidecar.
+
+
+RELEASE 2.5.1 PLAN ENFORCEMENT HARDENING (COMPLETED 15 SEPTEMBER 2026)
+------------------------------------------------------------------------
+
+[x] Enforce Customer app, paired-table limits, games/timers, waiter ordering, advanced reports and automation in web and API routes.
+[x] Revalidate existing tablets after every downgrade; keep only the oldest allowed slots and restore overflow access after an upgrade.
+[x] Serialize tablet quota checks and reject staff, inactive, disabled, duplicate and already-paired candidates.
+[x] Retire public device registration and table-code pairing; require a secure, one-time Administrator QR.
+[x] Recheck plans, active devices and effective tablet slots during private-channel authorization.
+[x] Close active games on billing, session loss, unpairing, token revocation, plan removal and offline server-expiry.
+[x] Make local, cloud, offline and bootstrap licence provenance fail closed against database source/status/feature tampering.
+[x] Add polished locked/upgrade states to the website, Staff app and Customer app while preserving safety completion workflows.
+[x] Pass 127 Laravel tests with 966 assertions, 5 Staff tests and 20 Customer tests; both Flutter analyzers are clean.
+[x] Verify package IDs, version/build metadata, ZIP structure and matching Android signing-certificate continuity.
+[x] Build TablePlay-Setup-v2.5.1.exe and its SHA-256 sidecar.
+[x] Pass the exact v2.5.1 payload fresh-install and in-place-upgrade lifecycle.
+
+
+RELEASE 2.5.2 CUSTOMER DINOSAUR DASH (COMPLETED 17 SEPTEMBER 2026)
+-----------------------------------------------------------------
+
+[x] Replace Word Scramble with Dinosaur Dash while preserving the approved four 1-player, four 2-player and four 4-player catalog.
+[x] Add native Flutter touch/keyboard jump controls, gravity, randomized obstacles, progressive speed and collision detection.
+[x] Save the local best score and submit completed results through the server-authorized game API.
+[x] Preserve per-table server timers and close the running game through the existing live access guard.
+[x] Correct Game Lounge routing for every dedicated multiplayer game screen.
+[x] Upgrade existing game records in place so identifiers and historical result references remain valid.
+[x] Build Customer Android 1.10.0/build 2012 with the existing production package ID and signing certificate.
+[x] Pass 23 Customer Flutter tests, a clean analyzer, 127 Laravel tests and the production package gate.
+[x] Build TablePlay-Setup-v2.5.2.exe and pass the exact-payload fresh-install and in-place-upgrade lifecycle.
+
+External release approvals still required: Authenticode certificate signing,
+legal/tax review for target countries, a separately hosted production cloud,
+penetration testing, and signed pilot acceptance from real restaurants.
+
+
+RELEASE 2.5.3 CUSTOMER BALLOON ASCENT (COMPLETED 18 SEPTEMBER 2026)
+-----------------------------------------------------------------
+
+[x] Add the original Balloon Ascent endless-flight game without copying Google artwork, sounds, branding or source code.
+[x] Add smooth touch dragging and keyboard steering with generated safe paths through spike gates.
+[x] Add +10 score bubbles, progressive capped speed, and Magnet, Slow and Shield power-ups.
+[x] Save the local best score and submit completed results through the server-authorized game API.
+[x] Preserve per-table server timers and live revocation through the existing game-access guard.
+[x] Expand the production catalog to five 1-player, four 2-player and four 4-player games.
+[x] Build Customer Android 1.11.0/build 2013 with the existing package ID and production certificate.
+[x] Pass 27 Customer Flutter tests, a clean analyzer, 127 Laravel tests with 967 assertions and the package gate.
+[x] Build TablePlay-Setup-v2.5.3.exe and pass the exact-payload fresh-install and in-place-upgrade lifecycle.
+
+
+CURRENT STATUS
+--------------
+
+Core restaurant operation and the complete five-plan enforcement matrix are implemented: Admin, Counter, Kitchen, Waiter and Customer workflows; secure QR-only tablet pairing; downgrade-safe table limits; waiter table ordering; menu images; games and server timers with live revocation; guided setup; branding; signed application releases; update channels; automation; health monitoring; backups; tamper-resistant licence provenance; signed offline activation; dedicated private-database credentials; Super Admin plan/customer management; scheduled lifecycle changes; invoices; refunds; and commercial reporting.
+
+Completed work has been removed from this active list.
+
+
+NEXT RELEASE - CONNECTION AND LICENSING RELIABILITY (HIGHEST PRIORITY)
+------------------------------------------------------------------------
+
+[ ] ONE-TIME TRIAL AND CORRECT LICENCE EXPIRY
+
+- Stop production installations from creating a new Free Trial automatically on every fresh database or reinstall.
+- Issue the Free Trial once from TablePlay Cloud and bind it to the restaurant, installation and computer identity.
+- Preserve valid existing licences and trial dates during repair, upgrade, backup restore and application updates.
+- Keep subscription expiry separate from the renewable offline verification lease so customers do not confuse the two dates.
+- Calculate status and remaining days on the restaurant server; never trust a Staff or Customer device clock.
+- Normalize licence timestamps to UTC and display them using the configured restaurant timezone.
+- Define one inclusive remaining-day rule and prevent negative, fractional or grammatically incorrect day messages.
+- Deliver renewal warnings at 30, 14, 7, 3 and 1 days through the dashboard and configured customer channel.
+- Apply a synchronized renewal immediately without reinstalling the server or either application.
+- After expiry, allow existing kitchen, billing, payment, backup and data-export work while blocking new sessions and pairings.
+- Test new installation, reinstall, clock rollback, timezone change, expiry, grace, renewal and offline-lease refresh behavior.
+
+
+[ ] LICENCE AND SUBSCRIPTION PAGE REDESIGN
+
+- Show plan, licence reference, source, signature state and exact subscription status clearly.
+- Show start date, subscription expiry, server-calculated days remaining and grace-period end date.
+- Show the offline verification due date separately from the commercial subscription expiry date.
+- Show paired-table usage and the current plan limit with a clear progress indicator.
+- List included, unavailable and limit-restricted features for the active plan.
+- Show last successful synchronization, next required verification, last error and a plain-language repair action.
+- Add clear states for Trial, Active, Pending, Grace, Suspended, Expired, Invalid and Missing.
+- Keep online activation, offline .tpr/.tpl activation, synchronization history and renewal history understandable for non-technical owners.
+- Disable duplicate actions while activation or synchronization is running and show success/failure inline without browser alert boxes.
+
+
+[ ] RELIABLE CUSTOMER TABLET PAIRING
+
+- Never generate a Customer pairing QR containing localhost, 127.0.0.1, 0.0.0.0 or another tablet-unreachable address.
+- Detect the current reachable LAN IPv4 address and verify the branding/health API before issuing the QR.
+- Warn the Admin when the page was opened using a laptop-only or stale address and provide the correct network URL.
+- Include the server identity, API URL, Reverb URL, table and one-time token in the signed/versioned pairing payload.
+- Keep the QR single-use and short-lived, and display its exact expiry countdown.
+- Add a safe manual server-address fallback when camera scanning is unavailable.
+- Test the server before saving pairing details and keep the tablet unpaired if any validation step fails.
+- Detect IP changes and guide the Admin to regenerate the QR instead of leaving the tablet in a timeout loop.
+- Show distinct errors for unreachable server, blocked firewall, isolated hotspot, expired QR, used QR, existing pairing and plan tablet limit.
+- Test pairing, reset, unpairing, reconnection and plan-limit enforcement across multiple physical Android devices.
+
+
+[ ] STAFF ANDROID SERVER CONNECTION QR
+
+- Add a separate Staff Connection QR that configures only the restaurant server and never assigns a dining table.
+- Let Staff Android scan the server QR before signing in with username/password or PIN.
+- Keep Customer table pairing and Staff server configuration as separate security workflows.
+- Add Test Connection, Change Server, Retry and Forget Server actions.
+- Display the current server name/IP, last successful connection and the specific reason a connection failed.
+- Save the validated server address and authenticated session until explicit logout while continuing to enforce server-side token revocation.
+- Retry temporary network failures with bounded backoff without creating duplicate actions or forcing logout.
+- Reject localhost and 0.0.0.0 on Android while continuing to use 127.0.0.1 safely for Staff Windows on the server laptop.
+
+
+[ ] SERVER MANAGER NETWORK DOCTOR
+
+- Show the active adapter, network name, IPv4 address and Windows Public/Private network category.
+- Test HTTP port 8000, Reverb port 8080, Laravel health, branding API and local device reachability.
+- Add one elevated Fix Local Network Access action for the selected restaurant adapter.
+- Recreate narrowly scoped TablePlay firewall rules and explain that database port 3310 remains localhost-only.
+- Detect hotspot/client isolation and provide a direct explanation when peer devices cannot communicate.
+- Refresh Admin shortcuts, displayed URLs and download QR codes when the server IP changes.
+- Recommend a dedicated router and fixed DHCP reservation for production restaurants.
+- Add a copyable diagnostic result that excludes passwords, tokens, licence secrets and customer data.
+
+
+[ ] CONSISTENT PASSWORD AND PIN VISIBILITY
+
+- Keep the completed Staff Flutter login eye control and apply the same accessible behavior everywhere else.
+- Add show/hide controls to the website login, Add Staff password and Add Staff PIN fields.
+- Keep the installer password visibility control and standardize icon, tooltip, focus, keyboard and screen-reader behavior.
+- Hide credentials by default, clear temporary credential controllers after submission and never persist plaintext credentials.
+- Keep password, PIN and role validation authoritative on the server and return safe field-specific errors.
+- Add UI and server tests for empty, short, oversized, malformed and conflicting password/PIN submissions.
+
+
+[ ] CONNECTION AND LICENSING RELEASE ACCEPTANCE
+
+- Confirm a new restaurant receives only one Cloud-authorized trial across reinstall attempts.
+- Confirm the Licence page reports subscription expiry and offline verification due dates separately and accurately.
+- Confirm renewal changes the effective entitlement without reinstalling TablePlay or either app.
+- Confirm a Customer tablet cannot receive an unusable loopback QR.
+- Confirm Customer pairing works from a clean Android installation on the restaurant Wi-Fi.
+- Confirm Staff Android connects by Staff QR and retains its session until logout or server-side revocation.
+- Confirm Network Doctor identifies Public network, blocked firewall, stale IP and hotspot isolation conditions.
+- Confirm every password/PIN field has consistent visibility, validation and accessibility behavior.
+- Run clean-PC, hotspot, dedicated-router, server-restart, IP-change and offline-recovery tests before publishing.
+
+
+PRIORITY 1 - COMMERCIAL PLATFORM
+--------------------------------
+
+[ ] UNIFIED CUSTOMER SUPPORT TIMELINE
+
+- Add individual support-note events to the existing license, subscription and payment timeline.
+
+
+[ ] SUBSCRIPTION LIFECYCLE AUTOMATION
+
+- Add complimentary extensions with a required reason and audit entry.
+- Deliver the recorded 30, 14, 7 and 1 day renewal reminders through configured email or another customer channel.
+
+
+[ ] BILLING, PAYMENTS AND INVOICES
+
+- Generate downloadable PDF invoice receipts.
+- Add partial refunds and credit notes in addition to the completed full-refund workflow.
+
+
+[ ] SEPARATE CLOUD SUPER ADMIN DEPLOYMENT
+
+- Host the Platform Super Admin separately from restaurant installations.
+- Give each restaurant strict tenant isolation.
+- Use separate platform authentication, authorization and audit records.
+- Prevent local Restaurant Admin accounts from reaching platform routes.
+- Keep restaurant ordering operational when the internet or cloud is unavailable.
+- Document online cloud synchronization, production outage recovery and signing-key rotation.
+
+
+PRIORITY 2 - SECURITY AND RECOVERY
+----------------------------------
+
+[ ] ADMINISTRATOR SECURITY HARDENING
+
+- Add two-factor authentication and recovery codes for Super Admin accounts.
+- Add login history and suspicious-login notifications.
+- Add session/device listing and remote session revocation.
+- Require password confirmation for license, payment and deletion actions.
+- Add temporary login lockout and configurable audit-log retention.
+- Add automatic screen locking for unattended Staff applications.
+- Replace every development/default credential before release.
+
+
+[ ] ENCRYPTED BACKUP AND DISASTER RECOVERY
+
+- Encrypt scheduled backup archives.
+- Verify automatically that each backup is readable and restorable.
+- Store a protected off-device backup copy.
+- Add missing, invalid and overdue backup warnings.
+- Test and document full recovery on a replacement server.
+- Ensure recovery preserves restaurant data, signing identity and licensing state.
+
+
+[ ] SUPPORT DIAGNOSTIC PACKAGE
+
+- Generate a downloadable sanitized diagnostic ZIP.
+- Include versions, service health, network checks, configuration summary and logs.
+- Exclude passwords, tokens, signing secrets, license secrets and customer information.
+- Add a preview showing exactly what will be included before export.
+
+
+PRIORITY 3 - INSTALLATION AND DAILY OPERATIONS
+----------------------------------------------
+
+[ ] MENU IMPORT AND EXPORT
+
+- Import categories and menu items from CSV or Excel.
+- Support prices, descriptions, food type, allergens, images and availability.
+- Preview and validate every row before committing changes.
+- Report errors without partially importing invalid data.
+- Export the current menu and a reusable blank template.
+
+
+[ ] RELIABLE OFFLINE APP RECOVERY
+
+- Retain Customer and Waiter carts during short disconnections.
+- Queue safe actions locally and retry after reconnection.
+- Display offline, queued, failed and synchronized states clearly.
+- Keep idempotency keys so reconnecting never creates duplicate orders.
+- Test hotspot loss, server restart and application restart scenarios.
+
+
+[ ] PRINTER CONFIGURATION WIZARD
+
+- Detect supported receipt printers.
+- Select printer and 58 mm or 80 mm paper width.
+- Print a test receipt during setup.
+- Configure automatic Counter printing, copies and retry behavior.
+- Show actionable errors for disconnected or unavailable printers.
+
+
+[ ] INSTALLATION READINESS CERTIFICATION
+
+- Verify database, services, firewall, storage and local-network access.
+- Verify Staff app, Customer app, pairing, backup and printer connectivity.
+- Run a guided test order from placement through payment and game locking.
+- Produce and save a dated TablePlay Ready for Service result.
+- Provide clear repair actions for every failed check.
+
+
+PRIORITY 4 - CUSTOMER OWNERSHIP AND MARKET RELEASE
+--------------------------------------------------
+
+[ ] RESTAURANT DATA EXPORT
+
+- Export menu, staff, tables, orders, sales, payments and audit history.
+- Allow export and backup access after subscription expiration.
+- Produce documented, portable formats.
+- Confirm exports do not expose password hashes, tokens or signing secrets.
+
+
+[ ] DEMO AND SALES MODE
+
+- Create clearly marked sample tables, menu items, orders and reports.
+- Add a guided sales demonstration workflow.
+- Remove demonstration data safely without affecting real restaurant data.
+- Prevent demo transactions from appearing in production reports.
+
+
+[ ] CUSTOMER SELF-SERVICE PORTAL
+
+- Let restaurant owners view their subscription and renewal date.
+- Download invoices, signed applications and installation guides.
+- Request renewal, upgrade, downgrade or license transfer.
+- View installation versions and health status.
+- Contact support without exposing Platform Super Admin controls.
+
+
+[ ] PRIVACY, LEGAL AND SUPPORT PACKAGE
+
+- Software license agreement.
+- Privacy and data-retention policy.
+- Refund and cancellation policy.
+- Support and service-level policy.
+- Warranty and liability limitations.
+- Third-party software and open-source notices.
+
+
+FINAL COMMERCIAL ACCEPTANCE CHECKS
+----------------------------------
+
+[ ] Create a restaurant customer, start a trial and convert it to a paid plan.
+[ ] Record payment and generate a correct numbered tax invoice.
+[ ] Upgrade and downgrade without losing restaurant data.
+[ ] Confirm expiration warnings and safe grace-period behavior.
+[ ] Confirm tenant isolation and that Restaurant Admin cannot access the cloud portal.
+[ ] Complete two-factor recovery and revoke another Super Admin session.
+[ ] Restore an encrypted backup on a replacement server.
+[ ] Import a menu containing both valid and invalid rows safely.
+[ ] Submit an offline queued order exactly once after reconnection.
+[ ] Configure a printer and complete a test receipt.
+[ ] Generate a diagnostic package containing no secrets.
+[ ] Confirm an expired restaurant can export all of its data.
+[ ] Complete a fresh-install readiness certification.
+[ ] Complete a .tpr -> .tpl USB activation on an air-gapped clean Windows PC and confirm that tampered, replayed and wrong-device files are rejected.
+[ ] Complete legal, privacy, licensing and support review before accepting payment.
+
+
+IMPLEMENTATION STATUS
+---------------------
+
+Status: Core product complete. Remaining work is focused on SaaS operations, billing, security hardening, recovery and market compliance.

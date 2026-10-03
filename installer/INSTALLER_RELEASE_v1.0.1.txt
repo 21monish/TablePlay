@@ -1,0 +1,55 @@
+TABLEPLAY ONE-CLICK WINDOWS INSTALLER
+Release: 1.0.1
+Platform: Windows x64
+
+INSTALLER
+---------
+File: TablePlay-Setup-v1.0.1.exe
+Size: 401,495,038 bytes (382.9 MB)
+SHA-256: 2600AAB9B82A1A6B7BA72725D61253325234CDE1D1C575691F283F8026FDFC54
+
+IMPORTANT SIGNING STATUS
+------------------------
+The Android applications bundled in this installer are signed release APKs and
+their hashes match the verified TablePlay release files.
+
+The Windows setup EXE is not yet Authenticode-signed. It is suitable for local
+testing, but a production code-signing certificate should be used before the
+installer is distributed to restaurants. Windows SmartScreen may display an
+unknown-publisher warning until it is signed.
+
+INSTALLATION STEPS
+------------------
+1. Stop any development servers already using TCP ports 8000, 8080 or 3310.
+2. Double-click TablePlay-Setup-v1.0.1.exe.
+3. Approve the Windows administrator permission request.
+4. Enter the restaurant name, administrator email and a password of at least
+   10 characters.
+5. Click Install TablePlay.
+6. Wait for the status to show TablePlay is ready.
+7. Click Launch TablePlay.
+8. Sign in with username "admin" and the password entered during installation.
+
+The installer creates its own PHP and MariaDB installation under:
+C:\Program Files\TablePlay
+
+It does not use or modify XAMPP. The private database listens only on:
+127.0.0.1:3310
+
+The restaurant network uses:
+- Laravel/Admin/API: TCP 8000
+- Reverb real-time updates: TCP 8080
+
+AFTER INSTALLATION
+------------------
+Open TablePlay Server Manager from the desktop or Start menu to:
+- Start, stop or restart TablePlay
+- Check service and application health
+- View the current local IP address
+- Open the Admin dashboard
+- Display offline app-download QR codes
+- Create or restore database backups
+- View logs
+- Uninstall TablePlay using two-step confirmation
+
+The Windows service starts TablePlay automatically when Windows starts.

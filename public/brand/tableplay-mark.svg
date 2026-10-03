@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">TablePlay</title>
+  <desc id="desc">A dining table combined with game controls.</desc>
+  <rect width="64" height="64" rx="18" fill="#143c35"/>
+  <path d="M15 23.5C15 19.9 17.9 17 21.5 17h21c3.6 0 6.5 2.9 6.5 6.5v13c0 3.6-2.9 6.5-6.5 6.5h-21A6.5 6.5 0 0 1 15 36.5v-13Z" fill="#fffaf1"/>
+  <path d="M21 27.5h8M25 23.5v8" stroke="#ef6a3a" stroke-width="3.2" stroke-linecap="round"/>
+  <circle cx="39" cy="25.5" r="2.2" fill="#ef6a3a"/>
+  <circle cx="43" cy="30" r="2.2" fill="#ef6a3a"/>
+  <path d="M23 47v-4m18 4v-4M23 17v-3m18 3v-3" stroke="#f5bd62" stroke-width="3" stroke-linecap="round"/>
+</svg>

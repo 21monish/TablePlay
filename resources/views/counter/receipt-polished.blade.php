@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ $bill->bill_number }} &middot; Receipt</title><link rel="icon" href="{{ route('brand.favicon',['v'=>$settings?->updated_at?->timestamp]) }}">@vite(['resources/css/app.css'])</head>
+<body class="receipt-page">
+<main class="receipt">
+    <header class="receipt__brand"><img src="{{ $settings?->restaurant_logo_url ?: '/brand/tableplay-mark.svg' }}" alt=""><h1>{{ $settings?->restaurant_name ?: 'TablePlay' }}</h1>@if($settings?->tagline)<p>{{ $settings->tagline }}</p>@endif<p>{{ $settings?->address }}@if($settings?->phone)<br>{{ $settings->phone }}@endif @if($settings?->gstin)<br>GSTIN: {{ $settings->gstin }}@endif</p></header>
+    <hr class="receipt__rule"><div><strong>{{ $bill->bill_number }}</strong><br>Table {{ $bill->tableSession->diningTable->table_code }} &middot; {{ $bill->generated_at->format('d M Y, H:i') }}</div><hr class="receipt__rule">
+    <table><thead><tr><th>Item</th><th class="right">Amount</th></tr></thead><tbody>@foreach($bill->tableSession->orders->whereNotIn('status',['cancelled','rejected']) as $order)@foreach($order->items->where('status','!=','cancelled') as $item)<tr><td>{{ $item->quantity }} × {{ $item->item_name_snapshot }}</td><td class="right">{{ number_format($item->line_total,2) }}</td></tr>@endforeach @endforeach<tr><td>Subtotal</td><td class="right">{{ number_format($bill->subtotal,2) }}</td></tr><tr><td>{{ $settings?->tax_name ?: 'Tax' }}</td><td class="right">{{ number_format($bill->tax_amount,2) }}</td></tr>@if($bill->discount_amount>0)<tr><td>Discount</td><td class="right">-{{ number_format($bill->discount_amount,2) }}</td></tr>@endif<tr class="total"><td>Total</td><td class="right">{{ $settings?->currency ?: 'INR' }} {{ number_format($bill->grand_total,2) }}</td></tr>@if($bill->payment_status==='paid')<tr><td>Cash received</td><td class="right">{{ number_format($bill->payments->sum('received_amount'),2) }}</td></tr><tr><td>Change</td><td class="right">{{ number_format($bill->payments->sum('change_amount'),2) }}</td></tr>@endif</tbody></table>
+    <div class="receipt__footer"><p>{{ $settings?->receipt_footer ?: 'Thank you for dining with us.' }}</p><small>Powered locally by TablePlay</small></div>
+    <button class="button button--accent button--block no-print" type="button" onclick="window.print()"><x-icon name="receipt" :size="16" /> Print receipt</button>
+</main>
+</body></html>
