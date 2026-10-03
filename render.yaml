@@ -46,7 +46,7 @@ services:
     dockerContext: .
     healthCheckPath: /up
     autoDeployTrigger: commit
-    dockerCommand: /bin/sh -c "php artisan migrate --force && php artisan db:seed --force && /usr/bin/supervisord -c /etc/supervisor/conf.d/tableplay.conf"
+    dockerCommand: php artisan migrate --force && php artisan db:seed --force && exec /usr/bin/supervisord -c /etc/supervisor/conf.d/tableplay.conf
     envVars:
       - fromGroup: tableplay-core-secrets
       - fromGroup: tableplay-realtime-secrets
