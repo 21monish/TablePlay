@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withBroadcasting(__DIR__.'/../routes/channels.php', ['prefix' => 'api/v1', 'middleware' => ['api', 'auth:sanctum', AuthorizeBroadcastChannel::class]])
     ->withMiddleware(function (Middleware $middleware): void {
+        // Render terminates HTTPS at its proxy. Trust forwarded headers so Laravel
+        // generates secure asset, form, redirect, and verification URLs.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'device' => AuthenticateDevice::class,
             'entitlement' => EnsurePlanFeature::class,
