@@ -220,7 +220,7 @@
     <div class="portal-shell portal-footer__inner">
         <x-brand light />
         <p>Local ordering, restaurant operations and table entertainment.</p>
-        <div><a href="#features">Features</a><a href="#applications">Applications</a><a href="{{ route('login') }}">Staff sign in</a></div>
+        <div><a href="#features">Features</a><a href="#applications">Applications</a><a href="{{ route('privacy') }}">Privacy</a><a href="{{ route('terms') }}">Terms</a><a href="{{ route('login') }}">Staff sign in</a></div>
         <small>&copy; {{ now()->year }} TablePlay. Built for private restaurant networks.</small>
     </div>
 </footer>

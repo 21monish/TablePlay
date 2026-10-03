@@ -19,7 +19,22 @@ class PortalTest extends TestCase
             ->assertSee('Staff Desktop')
             ->assertSee('Customer Table App')
             ->assertSee('Staff sign in')
+            ->assertSee(route('privacy'), false)
+            ->assertSee(route('terms'), false)
             ->assertSee('Not yet published');
+    }
+
+    public function test_public_legal_pages_are_available_without_login(): void
+    {
+        $this->get('/privacy')
+            ->assertOk()
+            ->assertSee('Privacy Policy')
+            ->assertSee('gmail.send');
+
+        $this->get('/terms')
+            ->assertOk()
+            ->assertSee('Terms of Service')
+            ->assertSee('Plans, trials, and licences');
     }
 
     public function test_portal_exposes_only_published_packages_that_exist_on_disk(): void

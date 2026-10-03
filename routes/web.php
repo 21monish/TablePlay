@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Web\{AdminController,AppUpdateController,AutomationController,BrandAssetController,CloudManagementController,CounterController,EmailVerificationController,HelpController,KitchenController,LicenseController,LoginController,PortalController,SetupWizardController,SuperAdminController};
 
 Route::get('/', PortalController::class)->name('portal');
+Route::view('/privacy', 'legal.privacy')->name('privacy');
+Route::view('/terms', 'legal.terms')->name('terms');
 Route::get('/favicon.ico', [BrandAssetController::class, 'favicon'])->name('brand.favicon');
 
 Route::middleware('guest')->group(function () {
