@@ -50,6 +50,7 @@ COPY --from=frontend /app/public/build ./public/build
 COPY docker/apache-vhost.conf /etc/apache2/sites-available/000-default.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/tableplay.conf
 COPY docker/render-entrypoint.sh /usr/local/bin/tableplay-entrypoint
+COPY docker/render-web-start.sh /usr/local/bin/tableplay-web-start
 
 RUN mkdir -p \
         storage/app/public \
@@ -60,7 +61,7 @@ RUN mkdir -p \
         storage/logs \
         bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
-    && chmod +x /usr/local/bin/tableplay-entrypoint \
+    && chmod +x /usr/local/bin/tableplay-entrypoint /usr/local/bin/tableplay-web-start \
     && php artisan package:discover --ansi
 
 EXPOSE 10000
