@@ -130,10 +130,14 @@ services:
         value: production
       - key: APP_DEBUG
         value: "false"
+      - key: APP_URL
+        value: https://tableplay-api.onrender.com
       - key: APP_KEY
         sync: false
       - key: LOG_CHANNEL
         value: stderr
+      - key: CACHE_STORE
+        value: array
       - key: REVERB_SERVER_HOST
         value: 0.0.0.0
       - key: REVERB_SERVER_PORT
@@ -144,3 +148,5 @@ services:
         value: "443"
       - key: REVERB_SCHEME
         value: https
+      - key: REVERB_ALLOWED_ORIGIN
+        value: https://tableplay-api.onrender.com
