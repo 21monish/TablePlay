@@ -113,7 +113,7 @@ services:
       - key: MAIL_MAILER
         value: smtp
       - key: MAIL_SCHEME
-        value: tls
+        value: smtp
       - key: MAIL_FROM_NAME
         value: TablePlay
 
