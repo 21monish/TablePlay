@@ -9,15 +9,13 @@ envVarGroups:
         sync: false
       - key: TABLEPLAY_SUPERADMIN_PASSWORD
         sync: false
-      - key: MAIL_HOST
-        sync: false
-      - key: MAIL_PORT
-        sync: false
-      - key: MAIL_USERNAME
-        sync: false
-      - key: MAIL_PASSWORD
-        sync: false
       - key: MAIL_FROM_ADDRESS
+        sync: false
+      - key: GOOGLE_GMAIL_CLIENT_ID
+        sync: false
+      - key: GOOGLE_GMAIL_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_GMAIL_REFRESH_TOKEN
         sync: false
       - key: SUPABASE_S3_ENDPOINT
         sync: false
@@ -111,9 +109,7 @@ services:
       - key: AWS_USE_PATH_STYLE_ENDPOINT
         value: "true"
       - key: MAIL_MAILER
-        value: smtp
-      - key: MAIL_SCHEME
-        value: smtp
+        value: gmail-api
       - key: MAIL_FROM_NAME
         value: TablePlay
 

@@ -22,6 +22,12 @@ return [
         'key' => env('RESEND_API_KEY'),
     ],
 
+    'gmail_api' => [
+        'client_id' => env('GOOGLE_GMAIL_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_GMAIL_CLIENT_SECRET'),
+        'refresh_token' => env('GOOGLE_GMAIL_REFRESH_TOKEN'),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

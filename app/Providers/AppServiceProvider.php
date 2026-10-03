@@ -2,8 +2,12 @@
 
 namespace App\Providers;
 
+use App\Mail\GmailApiTransport;
 use App\Models\RestaurantSetting;
 use App\Services\EntitlementService;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
+use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
@@ -24,6 +28,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Mail::extend('gmail-api', function (): GmailApiTransport {
+            return new GmailApiTransport(
+                app(HttpFactory::class),
+                app(CacheRepository::class),
+                (string) config('services.gmail_api.client_id'),
+                (string) config('services.gmail_api.client_secret'),
+                (string) config('services.gmail_api.refresh_token'),
+            );
+        });
+
         $settings = null;
 
         try {
