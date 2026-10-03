@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="tableplay-reverb-key" content="{{ config('reverb.apps.apps.0.key') }}">
-    <meta name="tableplay-reverb-port" content="{{ config('reverb.servers.reverb.port', 8080) }}">
+    <meta name="tableplay-reverb-port" content="{{ config('tableplay.reverb_public_port') ?: config('reverb.servers.reverb.port', 8080) }}">
+    <meta name="tableplay-reverb-host" content="{{ config('tableplay.reverb_public_host') }}">
+    <meta name="tableplay-reverb-scheme" content="{{ config('tableplay.reverb_public_scheme') }}">
     <meta name="theme-color" content="#143c35">
     <title>@yield('title', 'Workspace') &middot; {{ $appSettings?->restaurant_name ?: 'TablePlay' }}</title>
     <link rel="icon" href="{{ route('brand.favicon',['v'=>$appSettings?->updated_at?->timestamp]) }}">

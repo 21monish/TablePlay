@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -26,14 +27,18 @@ class AuthController extends Controller
         }
 
         $data = $request->validate([
-            'username' => ['required', 'string', 'max:100'],
+            'username' => ['required', 'string', 'max:255'],
             'password' => ['nullable', 'required_without:pin', 'string', 'max:255'],
             'pin' => ['nullable', 'required_without:password', 'regex:/^\d{4,12}$/'],
             'device_name' => ['nullable', 'string', 'min:2', 'max:100'],
         ]);
 
+        $identifier = $data['username'];
         $user = User::with('role')
-            ->where('username', $data['username'])
+            ->where(function ($query) use ($identifier): void {
+                $query->where('username', $identifier)
+                    ->orWhereRaw('LOWER(email) = ?', [strtolower($identifier)]);
+            })
             ->where('is_active', true)
             ->first();
         $valid = $user && (isset($data['password'])
@@ -41,6 +46,14 @@ class AuthController extends Controller
             : (filled($user->pin) && Hash::check($data['pin'], $user->pin)));
 
         abort_unless($valid, 422, 'Invalid credentials.');
+
+        if ($user->requiresEmailVerification() && ! $user->hasVerifiedEmail()) {
+            throw new HttpResponseException(response()->json([
+                'message' => 'Verify your email address before signing in.',
+                'code' => 'email_verification_required',
+                'email' => $user->email,
+            ], 403));
+        }
 
         $user->update(['last_login_at' => now()]);
 

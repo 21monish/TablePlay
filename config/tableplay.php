@@ -14,4 +14,16 @@ return [
     'offline_license_lease_days' => (int) env('TABLEPLAY_OFFLINE_LICENSE_LEASE_DAYS', 30),
     'device_fingerprint_override' => env('TABLEPLAY_DEVICE_FINGERPRINT_OVERRIDE'),
     'allow_local_plan_changes' => (bool) env('TABLEPLAY_ALLOW_LOCAL_PLAN_CHANGES', false),
+    'require_privileged_email_verification' => filter_var(
+        env('TABLEPLAY_REQUIRE_EMAIL_VERIFICATION', false),
+        FILTER_VALIDATE_BOOL,
+    ),
+    'superadmin' => [
+        'name' => env('TABLEPLAY_SUPERADMIN_NAME', 'TablePlay Super Admin'),
+        'email' => env('TABLEPLAY_SUPERADMIN_EMAIL'),
+        'password' => env('TABLEPLAY_SUPERADMIN_PASSWORD'),
+    ],
+    'reverb_public_host' => env('REVERB_PUBLIC_HOST'),
+    'reverb_public_port' => (int) env('REVERB_PUBLIC_PORT', 0),
+    'reverb_public_scheme' => env('REVERB_PUBLIC_SCHEME'),
 ];

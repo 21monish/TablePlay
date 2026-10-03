@@ -19,11 +19,15 @@ class LoginController extends Controller
     {
         $request->merge(['username' => trim((string) $request->input('username'))]);
         $data = $request->validate([
-            'username' => ['required', 'string', 'max:100'],
+            'username' => ['required', 'string', 'max:255'],
             'credential' => ['required', 'string', 'max:255'],
         ]);
+        $identifier = $data['username'];
         $user = User::with('role')
-            ->where('username', $data['username'])
+            ->where(function ($query) use ($identifier): void {
+                $query->where('username', $identifier)
+                    ->orWhereRaw('LOWER(email) = ?', [strtolower($identifier)]);
+            })
             ->where('is_active', true)
             ->first();
         $valid = $user && (Hash::check($data['credential'], $user->password)
@@ -36,6 +40,10 @@ class LoginController extends Controller
         Auth::login($user, true);
         $request->session()->regenerate();
         $user->update(['last_login_at' => now()]);
+
+        if ($user->requiresEmailVerification() && ! $user->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice');
+        }
 
         return redirect()->intended('/'.$user->role->name);
     }

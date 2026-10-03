@@ -4,7 +4,7 @@ use Illuminate\Database\Eloquent\Model;
 class RestaurantSetting extends Model {
  protected $guarded=[];
  protected $appends=['restaurant_logo_url','app_logo_url','customer_app_logo_url','staff_app_logo_url','system_logo_url','favicon_url','login_cover_url'];
- private function assetUrl(?string $path): ?string{return $path?asset(ltrim($path,'/')):null;}
+ private function assetUrl(?string $path): ?string{if(!$path)return null;if(str_starts_with($path,'http://')||str_starts_with($path,'https://'))return $path;return asset(ltrim($path,'/'));}
  public function getRestaurantLogoUrlAttribute(): ?string{return $this->assetUrl($this->restaurant_logo_path);}
  public function getAppLogoUrlAttribute(): ?string{return $this->assetUrl($this->customer_app_logo_path ?: $this->system_logo_path ?: $this->staff_app_logo_path);}
  public function getCustomerAppLogoUrlAttribute(): ?string{return $this->app_logo_url;}

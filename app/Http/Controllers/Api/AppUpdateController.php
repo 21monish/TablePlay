@@ -67,15 +67,18 @@ class AppUpdateController extends Controller
         $release = $updates->latest($definition['app'], $definition['platform'], $channel);
         abort_if($release === null || ! Storage::disk('updates')->exists($release->file_path), 404);
 
-        return response()->download(
-            Storage::disk('updates')->path($release->file_path),
-            "$target.{$definition['extension']}",
-            [
-                'Content-Type' => $release->mime_type ?: 'application/octet-stream',
-                'Cache-Control' => 'private, no-store',
-                'X-Checksum-SHA256' => $release->sha256,
-                'X-App-Version' => $release->version,
-            ],
-        );
+        $stream = Storage::disk('updates')->readStream($release->file_path);
+        abort_if($stream === false, 404);
+
+        return response()->streamDownload(function () use ($stream): void {
+            fpassthru($stream);
+            fclose($stream);
+        }, "$target.{$definition['extension']}", [
+            'Content-Type' => $release->mime_type ?: 'application/octet-stream',
+            'Content-Length' => (string) $release->file_size,
+            'Cache-Control' => 'private, no-store',
+            'X-Checksum-SHA256' => $release->sha256,
+            'X-App-Version' => $release->version,
+        ]);
     }
 }

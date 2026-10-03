@@ -39,17 +39,33 @@ return [
         ],
 
         'public' => [
-            'driver' => 'local',
-            'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            'driver' => env('TABLEPLAY_MEDIA_DRIVER', 'local'),
+            'root' => env('TABLEPLAY_MEDIA_DRIVER', 'local') === 'local'
+                ? storage_path('app/public')
+                : env('TABLEPLAY_MEDIA_PREFIX', ''),
+            'key' => env('SUPABASE_S3_ACCESS_KEY_ID'),
+            'secret' => env('SUPABASE_S3_SECRET_ACCESS_KEY'),
+            'region' => env('SUPABASE_S3_REGION', 'local'),
+            'bucket' => env('SUPABASE_MEDIA_BUCKET', 'tableplay-media'),
+            'endpoint' => env('SUPABASE_S3_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'url' => env('TABLEPLAY_MEDIA_URL', rtrim(env('APP_URL', 'http://localhost'), '/').'/storage'),
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
         ],
 
         'updates' => [
-            'driver' => 'local',
-            'root' => storage_path('app/updates'),
+            'driver' => env('TABLEPLAY_UPDATES_DRIVER', 'local'),
+            'root' => env('TABLEPLAY_UPDATES_DRIVER', 'local') === 'local'
+                ? storage_path('app/updates')
+                : env('TABLEPLAY_UPDATES_PREFIX', ''),
+            'key' => env('SUPABASE_S3_ACCESS_KEY_ID'),
+            'secret' => env('SUPABASE_S3_SECRET_ACCESS_KEY'),
+            'region' => env('SUPABASE_S3_REGION', 'local'),
+            'bucket' => env('SUPABASE_UPDATES_BUCKET', 'tableplay-updates'),
+            'endpoint' => env('SUPABASE_S3_ENDPOINT'),
+            'use_path_style_endpoint' => true,
             'throw' => true,
             'report' => true,
         ],

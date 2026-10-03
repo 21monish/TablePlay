@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\{AuditLog, Category, Device, DevicePairing, DiningTable, Game, MenuItem, Order, Payment, RestaurantSetting, Role, ServiceRequest, TableSession, User};
-use App\Services\{AuditService, DevicePairingService, EntitlementService, SystemHealthService};
+use App\Services\{AuditService, DevicePairingService, EntitlementService, PublicAssetStorage, SystemHealthService};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class AdminStaffController extends Controller
 {
@@ -191,18 +192,38 @@ class AdminStaffController extends Controller
             'mobile' => $request->filled('mobile') ? trim((string) $request->input('mobile')) : null,
             'pin' => $request->filled('pin') ? trim((string) $request->input('pin')) : null,
         ]);
+        $selectedRole = Role::query()->find($request->input('role_id'));
+        $emailRequired = (bool) config('tableplay.require_privileged_email_verification')
+            && $selectedRole?->name === 'admin';
         $data = $request->validate([
             'role_id' => ['required', Rule::exists('roles', 'id')->where(fn ($query) => $query->whereIn('name', ['admin', 'counter', 'kitchen', 'waiter']))],
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'min:3', 'max:100', 'regex:/^[A-Za-z0-9._-]+$/', 'unique:users'],
-            'email' => ['nullable', 'email', 'max:255', 'unique:users'],
+            'email' => [Rule::requiredIf($emailRequired), 'nullable', 'email:rfc', 'max:255', 'unique:users'],
             'mobile' => ['nullable', 'string', 'max:30'],
             'password' => ['required', 'string', 'min:8', 'max:255'],
             'pin' => ['nullable', 'digits_between:4,12'],
         ]);
         $user = User::create($data + ['is_active' => true]);
         $audit->record($request, 'user.created.mobile', $user, null, $user->only(['role_id', 'name', 'username', 'email', 'mobile', 'is_active']));
-        return response()->json($user->load('role'), 201);
+        $user->load('role');
+        $verificationEmailSent = false;
+        $warning = null;
+        if ($user->requiresEmailVerification()) {
+            try {
+                $user->sendEmailVerificationNotification();
+                $verificationEmailSent = true;
+            } catch (Throwable $exception) {
+                report($exception);
+                $warning = 'Account created, but the verification email could not be sent. Check the mail settings and resend it.';
+            }
+        }
+
+        return response()->json(array_merge($user->toArray(), [
+            'verification_required' => $user->requiresEmailVerification(),
+            'verification_email_sent' => $verificationEmailSent,
+            'warning' => $warning,
+        ]), 201);
     }
 
     public function storeCategory(Request $request, AuditService $audit)
@@ -247,16 +268,16 @@ class AdminStaffController extends Controller
         return $menuItem->fresh('category');
     }
 
-    public function uploadMenuItemImage(Request $request, MenuItem $menuItem, AuditService $audit): MenuItem
+    public function uploadMenuItemImage(Request $request, MenuItem $menuItem, AuditService $audit, PublicAssetStorage $assets): MenuItem
     {
         $request->validate(['image' => ['required', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120']]);
         $old = $menuItem->toArray();
         $oldPath = $menuItem->image_path;
-        $path = '/storage/'.$request->file('image')->store('menu-items', 'public');
+        $path = $assets->store($request->file('image'), 'menu-items');
         $menuItem->update(['image_path' => $path]);
 
-        if ($oldPath && $oldPath !== $path && str_starts_with($oldPath, '/storage/menu-items/')) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete(substr($oldPath, 9));
+        if ($oldPath && $oldPath !== $path) {
+            $assets->delete($oldPath);
         }
 
         $audit->record($request, 'menu_item.image_updated.mobile', $menuItem, $old, $menuItem->fresh()->toArray());
@@ -282,7 +303,7 @@ class AdminStaffController extends Controller
         return $settings->fresh();
     }
 
-    public function updateBranding(Request $request, AuditService $audit): RestaurantSetting
+    public function updateBranding(Request $request, AuditService $audit, PublicAssetStorage $assets): RestaurantSetting
     {
         $request->validate([
             'restaurant_logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
@@ -291,9 +312,9 @@ class AdminStaffController extends Controller
         $settings = RestaurantSetting::firstOrCreate(['id' => 1]);
         $old = $settings->toArray();
         $paths = [];
-        if ($request->hasFile('restaurant_logo')) $paths['restaurant_logo_path'] = '/storage/'.$request->file('restaurant_logo')->store('branding', 'public');
+        if ($request->hasFile('restaurant_logo')) $paths['restaurant_logo_path'] = $assets->store($request->file('restaurant_logo'), 'branding');
         if ($request->hasFile('app_logo')) {
-            $path = '/storage/'.$request->file('app_logo')->store('branding', 'public');
+            $path = $assets->store($request->file('app_logo'), 'branding');
             foreach (['customer_app_logo_path', 'staff_app_logo_path', 'system_logo_path', 'favicon_path'] as $field) $paths[$field] = $path;
         }
         abort_if($paths === [], 422, 'Select at least one branding file.');

@@ -24,6 +24,10 @@ class BrandAssetController extends Controller
             }
         }
 
+        if ($storedPath && (str_starts_with($storedPath, 'https://') || str_starts_with($storedPath, 'http://'))) {
+            return redirect()->away($storedPath);
+        }
+
         return response()->file(public_path('favicon.svg'), [
             'Content-Type' => 'image/svg+xml',
             'Cache-Control' => 'no-cache, no-store, must-revalidate',

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\{DiningTable, RestaurantSetting};
-use App\Services\{AuditService, LocalNetworkService, SecurePairingService, SetupWizardService};
+use App\Services\{AuditService, LocalNetworkService, PublicAssetStorage, SecurePairingService, SetupWizardService};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -18,7 +18,7 @@ class SetupWizardController extends Controller
         ]);
     }
 
-    public function identity(Request $request, AuditService $audit)
+    public function identity(Request $request, AuditService $audit, PublicAssetStorage $assets)
     {
         $data = $request->validate([
             'restaurant_name' => ['required', 'string', 'max:255'], 'tagline' => ['nullable', 'string', 'max:120'],
@@ -29,9 +29,9 @@ class SetupWizardController extends Controller
             'app_logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
         ]);
         $settings = RestaurantSetting::firstOrFail(); $old = $settings->toArray();
-        if ($request->hasFile('restaurant_logo')) $data['restaurant_logo_path'] = '/storage/'.$request->file('restaurant_logo')->store('branding', 'public');
+        if ($request->hasFile('restaurant_logo')) $data['restaurant_logo_path'] = $assets->store($request->file('restaurant_logo'), 'branding');
         if ($request->hasFile('app_logo')) {
-            $path = '/storage/'.$request->file('app_logo')->store('branding', 'public');
+            $path = $assets->store($request->file('app_logo'), 'branding');
             foreach (['customer_app_logo_path', 'staff_app_logo_path', 'system_logo_path', 'favicon_path'] as $field) $data[$field] = $path;
         }
         unset($data['restaurant_logo'], $data['app_logo']);

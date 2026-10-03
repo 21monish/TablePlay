@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\AuthenticateDevice;
 use App\Http\Middleware\AuthorizeBroadcastChannel;
 use App\Http\Middleware\EnsurePlanFeature;
+use App\Http\Middleware\EnsurePrivilegedEmailIsVerified;
 use App\Http\Middleware\EnsureRole;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'device' => AuthenticateDevice::class,
             'entitlement' => EnsurePlanFeature::class,
+            'privileged.verified' => EnsurePrivilegedEmailIsVerified::class,
             'role' => EnsureRole::class,
         ]);
     })

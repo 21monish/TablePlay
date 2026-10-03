@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Web\{AdminController,AppUpdateController,AutomationController,BrandAssetController,CloudManagementController,CounterController,HelpController,KitchenController,LicenseController,LoginController,PortalController,SetupWizardController,SuperAdminController};
+use App\Http\Controllers\Web\{AdminController,AppUpdateController,AutomationController,BrandAssetController,CloudManagementController,CounterController,EmailVerificationController,HelpController,KitchenController,LicenseController,LoginController,PortalController,SetupWizardController,SuperAdminController};
 
 Route::get('/', PortalController::class)->name('portal');
 Route::get('/favicon.ico', [BrandAssetController::class, 'favicon'])->name('brand.favicon');
@@ -11,8 +11,15 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:20,1')->name('login.store');
 });
 Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
+Route::middleware('auth')->group(function () {
+    Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+    Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+        ->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+    Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])
+        ->middleware('throttle:6,1')->name('verification.send');
+});
 Route::post('/help/chat', [HelpController::class, 'chat'])->middleware(['auth', 'throttle:60,1'])->name('help.chat');
-Route::prefix('superadmin')->name('superadmin.')->middleware(['auth','role:superadmin'])->group(function(){
+Route::prefix('superadmin')->name('superadmin.')->middleware(['auth','privileged.verified','role:superadmin'])->group(function(){
     Route::get('/',[SuperAdminController::class,'index'])->name('index');
     Route::post('plans',[SuperAdminController::class,'storePlan'])->name('plans.store');
     Route::put('plans/{plan}',[SuperAdminController::class,'updatePlan'])->name('plans.update');
@@ -43,7 +50,7 @@ Route::prefix('superadmin')->name('superadmin.')->middleware(['auth','role:super
     Route::post('cloud/installations/{installation}/transfer',[CloudManagementController::class,'transfer'])->name('cloud.installations.transfer');
     Route::get('cloud/installations/{installation}/license',[CloudManagementController::class,'downloadLicense'])->name('cloud.installations.license');
 });
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'privileged.verified', 'role:admin'])->group(function () {
     Route::get('/', [AdminController::class, 'index'])->name('overview');
     Route::get('tables', [AdminController::class, 'tables'])->name('tables');
     Route::get('menu', [AdminController::class, 'menu'])->name('menu');
@@ -94,7 +101,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::post('games/{game}/toggle', [AdminController::class, 'toggleGame'])->middleware('entitlement:games')->name('games.toggle');
 });
 
-Route::prefix('counter')->name('counter.')->middleware(['auth', 'role:admin,counter'])->group(function () {
+Route::prefix('counter')->name('counter.')->middleware(['auth', 'privileged.verified', 'role:admin,counter'])->group(function () {
     Route::get('/', [CounterController::class, 'index'])->name('index');
     Route::post('orders/{order}/confirm', [CounterController::class, 'confirm'])->name('orders.confirm');
     Route::post('orders/{order}/reject', [CounterController::class, 'reject'])->name('orders.reject');
@@ -106,7 +113,7 @@ Route::prefix('counter')->name('counter.')->middleware(['auth', 'role:admin,coun
     Route::post('games/{gameSession}/stop', [CounterController::class, 'stop'])->name('games.stop');
 });
 
-Route::prefix('kitchen')->name('kitchen.')->middleware(['auth', 'role:admin,kitchen'])->group(function () {
+Route::prefix('kitchen')->name('kitchen.')->middleware(['auth', 'privileged.verified', 'role:admin,kitchen'])->group(function () {
     Route::get('/', [KitchenController::class, 'index'])->name('index');
     Route::get('snapshot', [KitchenController::class, 'snapshot'])->name('snapshot');
     Route::post('orders/{order}/preparing', [KitchenController::class, 'preparing'])->name('orders.preparing');

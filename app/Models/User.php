@@ -2,17 +2,18 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmailContract
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, MustVerifyEmail, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -52,4 +53,10 @@ class User extends Authenticatable
 
     public function role() { return $this->belongsTo(Role::class); }
     public function hasRole(string ...$roles): bool { return in_array($this->role?->name, $roles, true); }
+
+    public function requiresEmailVerification(): bool
+    {
+        return (bool) config('tableplay.require_privileged_email_verification')
+            && $this->hasRole('admin', 'superadmin');
+    }
 }

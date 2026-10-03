@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\AppRelease;
 use App\Models\RestaurantSetting;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -71,12 +72,22 @@ class BootstrapInstallation extends Command
                 ['restaurant_name' => trim($validated['restaurant_name'])],
             );
 
-            $admin = User::query()->where('username', 'admin')->firstOrFail();
+            $adminRole = Role::query()->firstOrCreate(
+                ['name' => 'admin'],
+                ['display_name' => 'Administrator'],
+            );
+            $adminEmail = $validated['admin_email'] ?? 'admin@tableplay.local';
+            $admin = User::query()->firstOrNew(['username' => 'admin']);
+            $emailChanged = $admin->exists && $admin->email !== $adminEmail;
             $admin->forceFill([
+                'role_id' => $adminRole->id,
                 'name' => 'Administrator',
-                'email' => $validated['admin_email'] ?? 'admin@tableplay.local',
+                'email' => $adminEmail,
                 'password' => Hash::make($validated['admin_password']),
                 'is_active' => true,
+                'email_verified_at' => config('tableplay.require_privileged_email_verification')
+                    ? ($emailChanged ? null : $admin->email_verified_at)
+                    : ($admin->email_verified_at ?? now()),
             ])->save();
 
             foreach ($validated['releases'] ?? [] as $release) {

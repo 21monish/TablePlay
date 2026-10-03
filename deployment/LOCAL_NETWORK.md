@@ -11,4 +11,4 @@
 
 For hotspot testing with `php artisan serve`, use `deployment/start-tableplay-server.ps1` so Admin can upload update packages up to 256 MB. See `docs/LOCAL_APP_UPDATES.md` for signed package publishing and device update behavior.
 
-Seeded local users are `admin`, `counter`, `kitchen`, and `waiter`. Change the initial password `TablePlay@123` immediately.
+Production seeding does not create restaurants, tables, menu items, or default staff credentials. Use the Windows installer to create the first restaurant administrator, then create Counter, Kitchen, and Waiter accounts from **Admin → Team & access**.

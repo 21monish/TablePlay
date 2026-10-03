@@ -15,7 +15,7 @@
         @if($errors->any())<div class="alert alert--danger" role="alert"><div>@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div></div>@endif
         <form method="post" action="{{ route('login.store') }}">@csrf
             <div class="stack">
-                <label class="field">Username<input name="username" value="{{ old('username') }}" autocomplete="username" autofocus required placeholder="e.g. counter"></label>
+                <label class="field">Email or username<input name="username" value="{{ old('username') }}" autocomplete="username" autofocus required placeholder="e.g. admin@example.com or counter"></label>
                 <label class="field">Password or PIN<span class="secret-input"><input id="login-credential" type="password" name="credential" autocomplete="current-password" required placeholder="Enter your credential"><button type="button" data-secret-toggle aria-controls="login-credential" aria-label="Show password or PIN" title="Show password or PIN"><span data-secret-label>Show</span></button></span></label>
                 <label class="check-row"><input type="checkbox" name="remember" value="1" checked disabled> Keep me signed in until I log out</label>
                 <button class="button button--accent button--block" type="submit">Sign in securely <x-icon name="arrow" :size="16" /></button>

@@ -8,13 +8,18 @@ const reverbKey = document.querySelector('meta[name="tableplay-reverb-key"]')?.c
 const reverbPort = Number(document.querySelector('meta[name="tableplay-reverb-port"]')?.content
     ?? import.meta.env.VITE_REVERB_PORT
     ?? 8080);
+const reverbHost = document.querySelector('meta[name="tableplay-reverb-host"]')?.content
+    || window.location.hostname;
+const reverbScheme = document.querySelector('meta[name="tableplay-reverb-scheme"]')?.content
+    || window.location.protocol.replace(':', '');
+const secureReverb = reverbScheme === 'https' || reverbScheme === 'wss';
 
 window.Echo = new Echo({
     broadcaster: 'reverb',
     key: reverbKey,
-    wsHost: window.location.hostname,
+    wsHost: reverbHost,
     wsPort: reverbPort,
     wssPort: reverbPort,
-    forceTLS: window.location.protocol === 'https:',
+    forceTLS: secureReverb,
     enabledTransports: ['ws', 'wss'],
 });
