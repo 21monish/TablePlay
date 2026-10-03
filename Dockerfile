@@ -33,6 +33,7 @@ RUN apt-get update \
         libjpeg62-turbo-dev \
         libonig-dev \
         libpng-dev \
+        libpq-dev \
         libzip-dev \
         postgresql-client \
         supervisor \
