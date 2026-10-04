@@ -21,7 +21,8 @@ class PortalTest extends TestCase
             ->assertSee('Staff sign in')
             ->assertSee(route('privacy'), false)
             ->assertSee(route('terms'), false)
-            ->assertSee('Not yet published');
+            ->assertSee('Included with TablePlay Setup')
+            ->assertDontSee('Not yet published');
     }
 
     public function test_public_legal_pages_are_available_without_login(): void
@@ -62,8 +63,25 @@ class PortalTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('Version 9.9.9')
-            ->assertSee('Not yet published')
+            ->assertSee('Package temporarily unavailable')
             ->assertDontSee('/api/v1/app-updates/download/staff-windows', false);
+    }
+
+    public function test_portal_presents_the_verified_setup_release_as_the_distribution_entry_point(): void
+    {
+        config([
+            'app_updates.installer.url' => 'https://github.com/21monish/TablePlay/releases/download/v2.5.6/TablePlay-Setup-v2.5.6.exe',
+            'app_updates.installer.version' => '2.5.6',
+            'app_updates.installer.size' => 466790947,
+            'app_updates.installer.sha256' => str_repeat('a', 64),
+        ]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('TablePlay Setup 2.5.6')
+            ->assertSee('Published and verified')
+            ->assertSee('445.2 MB')
+            ->assertSee(route('trial.create'), false);
     }
 
     private function release(

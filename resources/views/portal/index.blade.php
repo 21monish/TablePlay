@@ -111,9 +111,30 @@
         <div class="portal-shell">
             <div class="portal-section__heading portal-section__heading--left" data-portal-reveal>
                 <span class="portal-kicker">Applications</span>
-                <h2>Two applications. One restaurant.</h2>
-                <p>Install the role-based Staff application on Windows and the Customer application on each Android table device.</p>
+                <h2>One setup. Every restaurant application.</h2>
+                <p>Start with the verified Windows installer. It prepares the restaurant server and includes the Staff Desktop and Customer Android packages for local installation.</p>
             </div>
+
+            <article class="portal-setup-card" data-portal-reveal>
+                <div class="portal-setup-card__icon"><x-icon name="setup" :size="30" /></div>
+                <div class="portal-setup-card__copy">
+                    <span class="portal-kicker">Complete Windows package</span>
+                    <h3>TablePlay Setup{{ $installer['available'] ? ' '.$installer['version'] : '' }}</h3>
+                    <p>Install the server once on the restaurant laptop. Staff Desktop and the Customer APK are bundled with Setup and are published automatically on the private restaurant portal.</p>
+                    @if($installer['available'])
+                        <div class="portal-release-meta portal-release-meta--setup">
+                            <span>Published release</span>
+                            @if($installer['size'] > 0)<span>{{ number_format($installer['size'] / 1048576, 1) }} MB</span>@endif
+                            <span title="{{ $installer['sha256'] }}">SHA {{ str($installer['sha256'])->limit(12) }}</span>
+                        </div>
+                    @endif
+                </div>
+                <div class="portal-setup-card__action">
+                    <span class="portal-availability {{ $installer['available'] ? 'is-ready' : '' }}"><i></i>{{ $installer['available'] ? 'Published and verified' : 'Available after account setup' }}</span>
+                    <a class="portal-button portal-button--primary" href="{{ route('trial.create') }}">{{ $installer['available'] ? 'Start free trial & download' : 'Start free trial' }} <x-icon name="arrow" :size="17" /></a>
+                    <a class="portal-setup-card__signin" href="{{ route('login') }}">Already registered? Sign in</a>
+                </div>
+            </article>
 
             <div class="portal-app-grid">
                 <article class="portal-app-card" data-portal-reveal>
@@ -128,8 +149,11 @@
                         @endif
                         @if($staffAvailable)
                             <a class="portal-button portal-button--primary" href="{{ route('api.app-updates.download', ['target' => 'staff-windows'], false) }}">Download Staff Desktop <x-icon name="update" :size="17" /></a>
+                        @elseif($staffRelease)
+                            <span class="portal-button portal-button--disabled" aria-disabled="true">Package temporarily unavailable</span>
                         @else
-                            <span class="portal-button portal-button--disabled" aria-disabled="true">Not yet published</span>
+                            <span class="portal-availability is-bundled"><i></i>Included with TablePlay Setup</span>
+                            <p class="portal-bundle-note">Download it from the private restaurant portal after Setup finishes.</p>
                         @endif
                     </div>
                     <div class="portal-desktop-art" aria-hidden="true"><span class="portal-desktop-art__screen"><i></i><b></b><b></b><b></b><em></em></span><span class="portal-desktop-art__stand"></span></div>
@@ -147,14 +171,17 @@
                         @endif
                         @if($customerAvailable)
                             <a class="portal-button portal-button--light" href="{{ route('api.app-updates.download', ['target' => 'customer-android'], false) }}">Download Customer APK <x-icon name="update" :size="17" /></a>
+                        @elseif($customerRelease)
+                            <span class="portal-button portal-button--disabled portal-button--disabled-light" aria-disabled="true">Package temporarily unavailable</span>
                         @else
-                            <span class="portal-button portal-button--disabled portal-button--disabled-light" aria-disabled="true">Not yet published</span>
+                            <span class="portal-availability is-bundled is-light"><i></i>Included with TablePlay Setup</span>
+                            <p class="portal-bundle-note portal-bundle-note--light">Scan the local portal QR after Setup to install it on each table device.</p>
                         @endif
                     </div>
                     <div class="portal-phone-art" aria-hidden="true"><span class="portal-phone-art__speaker"></span><div><small>TABLE 04</small><strong>What would you<br>like today?</strong><i></i><i></i><i></i><b>View cart · 3</b></div></div>
                 </article>
             </div>
-            <p class="portal-download-note"><x-icon name="help" :size="16" /> Android asks for permission before installing an APK outside the Play Store. Only install packages published by this TablePlay server.</p>
+            <p class="portal-download-note"><x-icon name="help" :size="16" /> Standalone app downloads are served by your private restaurant server. Android asks for permission before installing an APK outside the Play Store.</p>
         </div>
     </section>
 
