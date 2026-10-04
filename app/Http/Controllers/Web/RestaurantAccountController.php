@@ -39,10 +39,14 @@ class RestaurantAccountController extends Controller
         ]);
     }
 
-    public function downloadInstaller(): StreamedResponse
+    public function downloadInstaller(): RedirectResponse|StreamedResponse
     {
         $installer = $this->installerDetails();
         abort_unless($installer['available'], 404, 'The verified TablePlay Setup package has not been published yet.');
+
+        if ($installer['url'] !== null) {
+            return redirect()->away($installer['url']);
+        }
 
         $disk = Storage::disk($installer['disk']);
         $stream = $disk->readStream($installer['path']);
@@ -106,19 +110,44 @@ class RestaurantAccountController extends Controller
     {
         $disk = (string) config('app_updates.installer.disk', 'updates');
         $path = ltrim((string) config('app_updates.installer.path'), '/');
+        $url = trim((string) config('app_updates.installer.url'));
         $version = trim((string) config('app_updates.installer.version'));
+        $configuredSize = (int) config('app_updates.installer.size', 0);
         $sha256 = strtolower(trim((string) config('app_updates.installer.sha256')));
         $configured = $path !== '' && $version !== '' && preg_match('/^[a-f0-9]{64}$/', $sha256) === 1;
+        $url = $this->verifiedInstallerUrl($url);
 
-        try {
-            $available = $configured && Storage::disk($disk)->exists($path);
-            $size = $available ? Storage::disk($disk)->size($path) : null;
-        } catch (Throwable) {
-            $available = false;
-            $size = null;
+        $available = $configured && $url !== null;
+        $size = $available && $configuredSize > 0 ? $configuredSize : null;
+
+        if ($url === null) {
+            try {
+                $available = $configured && Storage::disk($disk)->exists($path);
+                $size = $available ? Storage::disk($disk)->size($path) : null;
+            } catch (Throwable) {
+                $available = false;
+                $size = null;
+            }
         }
 
-        return compact('disk', 'path', 'version', 'sha256', 'available') + ['file_size' => $size];
+        return compact('disk', 'path', 'url', 'version', 'sha256', 'available') + ['file_size' => $size];
+    }
+
+    private function verifiedInstallerUrl(string $url): ?string
+    {
+        if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+
+        $parts = parse_url($url);
+        if (($parts['scheme'] ?? null) !== 'https' || ! in_array(strtolower((string) ($parts['host'] ?? '')), [
+            'github.com',
+            'objects.githubusercontent.com',
+        ], true)) {
+            return null;
+        }
+
+        return $url;
     }
 
     private function publishedDownload(

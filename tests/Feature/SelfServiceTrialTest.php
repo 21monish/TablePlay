@@ -164,6 +164,48 @@ class SelfServiceTrialTest extends TestCase
             ->assertHeader('x-app-version', '2.5.6');
     }
 
+    public function test_verified_owner_is_redirected_to_a_configured_github_installer(): void
+    {
+        Notification::fake();
+        config([
+            'app_updates.installer.path' => 'server-windows/stable/TablePlay-Setup.exe',
+            'app_updates.installer.url' => 'https://github.com/21monish/TablePlay/releases/download/v2.5.6/TablePlay-Setup-v2.5.6.exe',
+            'app_updates.installer.version' => '2.5.6',
+            'app_updates.installer.size' => 466790947,
+            'app_updates.installer.sha256' => str_repeat('a', 64),
+        ]);
+
+        $this->post(route('trial.store'), $this->registration());
+        $user = User::where('email', 'owner@example.test')->firstOrFail();
+        $user->markEmailAsVerified();
+
+        $this->actingAs($user)->get(route('account.index'))
+            ->assertOk()
+            ->assertSee('445.2 MB')
+            ->assertSee(str_repeat('a', 64));
+
+        $this->get(route('account.installer.download'))
+            ->assertRedirect('https://github.com/21monish/TablePlay/releases/download/v2.5.6/TablePlay-Setup-v2.5.6.exe');
+    }
+
+    public function test_installer_rejects_untrusted_external_urls(): void
+    {
+        Notification::fake();
+        config([
+            'app_updates.installer.path' => 'server-windows/stable/TablePlay-Setup.exe',
+            'app_updates.installer.url' => 'https://example.test/TablePlay-Setup.exe',
+            'app_updates.installer.version' => '2.5.6',
+            'app_updates.installer.size' => 466790947,
+            'app_updates.installer.sha256' => str_repeat('a', 64),
+        ]);
+
+        $this->post(route('trial.store'), $this->registration());
+        $user = User::where('email', 'owner@example.test')->firstOrFail();
+        $user->markEmailAsVerified();
+
+        $this->actingAs($user)->get(route('account.installer.download'))->assertNotFound();
+    }
+
     private function registration(array $overrides = []): array
     {
         return array_merge([

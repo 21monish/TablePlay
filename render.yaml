@@ -104,8 +104,12 @@ services:
         value: updates
       - key: TABLEPLAY_INSTALLER_PATH
         value: server-windows/stable/TablePlay-Setup.exe
+      - key: TABLEPLAY_INSTALLER_URL
+        value: https://github.com/21monish/TablePlay/releases/download/v2.5.6/TablePlay-Setup-v2.5.6.exe
       - key: TABLEPLAY_INSTALLER_VERSION
         value: 2.5.6
+      - key: TABLEPLAY_INSTALLER_SIZE
+        value: "466790947"
       - key: TABLEPLAY_INSTALLER_SHA256
         value: 29e6b00b3b15d187736b87a7c95297765641bc29972b29d75c9ff1ca853fa618
       - key: SUPABASE_S3_REGION

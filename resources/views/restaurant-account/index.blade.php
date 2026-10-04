@@ -19,7 +19,7 @@
         <article class="download-card">
             <div class="download-card__heading"><span class="download-card__icon"><x-icon name="setup" /></span><div><strong>TablePlay Setup</strong><small>Restaurant server · Windows x64</small></div></div>
             @if($installer['available'])
-                <dl><div><dt>Version</dt><dd>{{ $installer['version'] }}</dd></div><div><dt>Size</dt><dd>{{ number_format($installer['file_size'] / 1048576, 1) }} MB</dd></div></dl>
+                <dl><div><dt>Version</dt><dd>{{ $installer['version'] }}</dd></div><div><dt>Size</dt><dd>{{ $installer['file_size'] ? number_format($installer['file_size'] / 1048576, 1).' MB' : 'Verified release' }}</dd></div></dl>
                 <code class="download-checksum" title="{{ $installer['sha256'] }}">SHA-256 {{ $installer['sha256'] }}</code>
                 <a class="button button--accent" href="{{ route('account.installer.download') }}"><x-icon name="download" :size="16" /> Download Setup</a>
             @else
