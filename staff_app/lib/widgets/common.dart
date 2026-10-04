@@ -209,6 +209,202 @@ class SectionTitle extends StatelessWidget {
   );
 }
 
+class PulseMetric {
+  const PulseMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+    this.onTap,
+    this.countsTowardAttention = true,
+  });
+
+  final String label;
+  final int value;
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
+  final bool countsTowardAttention;
+}
+
+class OperationsPulse extends StatelessWidget {
+  const OperationsPulse({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.metrics,
+  });
+
+  final String title;
+  final String subtitle;
+  final List<PulseMetric> metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    final attention = metrics.fold<int>(
+      0,
+      (total, metric) =>
+          total + (metric.countsTowardAttention ? metric.value : 0),
+    );
+    return Card(
+      color: TablePlayColors.deep,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: .1),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(
+                    attention == 0
+                        ? Icons.check_circle_rounded
+                        : Icons.bolt_rounded,
+                    color: attention == 0
+                        ? const Color(0xff6ee7b7)
+                        : TablePlayColors.gold,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        attention == 0
+                            ? 'Everything is under control'
+                            : subtitle,
+                        style: const TextStyle(
+                          color: Colors.white60,
+                          fontSize: 10.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        (attention == 0
+                                ? const Color(0xff6ee7b7)
+                                : TablePlayColors.gold)
+                            .withValues(alpha: .14),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(
+                    attention == 0 ? 'CLEAR' : '$attention ACTIVE',
+                    style: TextStyle(
+                      color: attention == 0
+                          ? const Color(0xff6ee7b7)
+                          : TablePlayColors.gold,
+                      fontSize: 9,
+                      letterSpacing: .65,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 620;
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: metrics.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: compact ? 2 : metrics.length,
+                    childAspectRatio: compact ? 2.55 : 2.8,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemBuilder: (context, index) {
+                    final metric = metrics[index];
+                    return Material(
+                      color: Colors.white.withValues(alpha: .075),
+                      borderRadius: BorderRadius.circular(13),
+                      child: InkWell(
+                        onTap: metric.onTap,
+                        borderRadius: BorderRadius.circular(13),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(metric.icon, color: metric.color, size: 20),
+                              const SizedBox(width: 9),
+                              Expanded(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${metric.value}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        height: 1,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      metric.label,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white60,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (metric.onTap != null)
+                                const Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: Colors.white38,
+                                  size: 18,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class StatusPill extends StatelessWidget {
   const StatusPill(this.value, {super.key});
   final String value;

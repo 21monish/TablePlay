@@ -1,0 +1,55 @@
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.hero > * {
+  min-width: 0;
+}
+
+.hero-panel {
+  width: 100%;
+}
+
+@media (max-width: 560px) {
+  .nav,
+  main,
+  .hero {
+    width: 100vw;
+    max-width: 100vw;
+  }
+
+  .nav-cta {
+    display: none;
+  }
+
+  .hero-copy,
+  .hero-panel {
+    width: calc(100vw - 36px);
+    max-width: calc(100vw - 36px);
+  }
+
+  .hero h1 {
+    font-size: clamp(39px, 12.3vw, 47px);
+    max-width: calc(100vw - 36px);
+    overflow-wrap: anywhere;
+  }
+
+  .panel-top {
+    gap: 10px;
+  }
+
+  .panel-top b {
+    white-space: nowrap;
+  }
+
+  .orders > div,
+  .orders > div > span {
+    min-width: 0;
+  }
+
+  .orders small {
+    overflow-wrap: anywhere;
+  }
+}

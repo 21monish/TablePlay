@@ -3,52 +3,91 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="TablePlay connects table ordering, restaurant operations, billing, service requests, and games in one platform.">
+  <meta name="description" content="TablePlay connects table ordering, kitchen flow, waiter requests, billing, and guest entertainment on one secure restaurant platform.">
   <meta name="theme-color" content="#103d35">
-  <title>TablePlay — Dine. Play. Delight.</title>
+  <title>TablePlay &mdash; Restaurant service, connected</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/site.css">
+  <link rel="stylesheet" href="/mobile.css">
 </head>
 <body>
   <header class="nav">
-    <a class="brand" href="#top" aria-label="TablePlay home"><span>✦</span><strong>Table<span>Play</span></strong></a>
-    <nav aria-label="Main navigation"><a href="#platform">Platform</a><a href="#how">How it works</a><a href="#apps">Apps</a><a href="https://tableplay-api.onrender.com/login">Sign in</a><a class="nav-cta" href="https://tableplay-api.onrender.com/trial/register">Start free trial</a></nav>
+    <a class="brand" href="#top" aria-label="TablePlay home"><span aria-hidden="true">TP</span><strong>Table<span>Play</span></strong></a>
+    <nav aria-label="Main navigation">
+      <a href="#platform">Platform</a>
+      <a href="#workflow">Workflow</a>
+      <a href="#trial">Free trial</a>
+      <a href="#apps">Apps</a>
+      <a href="https://tableplay-api.onrender.com/login">Sign in</a>
+      <a class="nav-cta" href="https://tableplay-api.onrender.com/trial/register">Start free trial</a>
+    </nav>
   </header>
 
   <main id="top">
     <section class="hero">
       <div class="hero-copy">
         <p class="eyebrow">Restaurant service, connected</p>
-        <h1>Every table becomes a better experience.</h1>
-        <p class="lead">TablePlay brings ordering, kitchen flow, waiter requests, billing, device management, and table games into one secure restaurant platform.</p>
-        <div class="actions"><a class="button primary" href="https://tableplay-api.onrender.com/trial/register">Start 14-day free trial</a><a class="button secondary" href="#how">See how it works</a></div>
-        <div class="trust"><span>✓ Role-based access</span><span>✓ Live order updates</span><span>✓ Local and cloud ready</span></div>
+        <h1>One calm system for every busy table.</h1>
+        <p class="lead">TablePlay brings guest ordering, kitchen flow, waiter requests, billing, device management, and table games into one secure restaurant platform.</p>
+        <div class="actions">
+          <a class="button primary" href="https://tableplay-api.onrender.com/trial/register">Start 14-day free trial</a>
+          <a class="button secondary" href="#workflow">See the service flow</a>
+        </div>
+        <p class="hero-note">No payment card required. Your restaurant data stays yours.</p>
       </div>
-      <div class="hero-panel" aria-label="TablePlay workflow preview">
-        <div class="panel-top"><span>Live restaurant</span><b>All systems healthy</b></div>
+      <div class="hero-panel" aria-label="TablePlay live restaurant preview">
+        <div class="panel-top"><span><i></i> Live restaurant</span><b>All systems healthy</b></div>
         <div class="stats"><article><small>Open tables</small><strong>08</strong><em>Serving now</em></article><article><small>Kitchen queue</small><strong>12</strong><em>4 ready</em></article><article><small>Guest requests</small><strong>03</strong><em>Needs attention</em></article></div>
-        <div class="orders"><div><i class="ready"></i><span><b>Table 04</b><small>Order ready for service</small></span><mark>Ready</mark></div><div><i></i><span><b>Table 09</b><small>Preparing · 06:21</small></span><mark>Kitchen</mark></div><div><i class="accent"></i><span><b>Table 02</b><small>Bill requested</small></span><mark>Counter</mark></div></div>
+        <div class="orders"><div><i class="ready"></i><span><b>Table 04</b><small>Order ready for service</small></span><mark>Ready</mark></div><div><i></i><span><b>Table 09</b><small>Preparing &middot; 06:21</small></span><mark>Kitchen</mark></div><div><i class="accent"></i><span><b>Table 02</b><small>Bill requested</small></span><mark>Counter</mark></div></div>
+        <div class="panel-foot"><span>Counter</span><span>Kitchen</span><span>Waiter</span><span>Customer</span></div>
       </div>
+    </section>
+
+    <section class="proof" aria-label="Trial highlights">
+      <article><strong>14 days</strong><span>Full guided trial</span></article>
+      <article><strong>3 tablets</strong><span>Included in the trial</span></article>
+      <article><strong>No card</strong><span>Start without payment</span></article>
+      <article><strong>Local-first</strong><span>Keep serving on your LAN</span></article>
     </section>
 
     <section id="platform" class="section">
-      <p class="eyebrow">One operating system</p><h2>Built around the real restaurant workflow.</h2>
-      <div class="feature-grid"><article><span>01</span><h3>Order without friction</h3><p>Guests browse a visual menu and order from their paired table. Waiters can place orders when no tablet is available.</p></article><article><span>02</span><h3>Keep every team aligned</h3><p>Counter, kitchen, waiter, and administrator workspaces show the actions each role needs—nothing extra.</p></article><article><span>03</span><h3>Turn waiting into play</h3><p>Server-controlled game access unlocks per table after order confirmation and ends automatically with the session.</p></article><article><span>04</span><h3>Manage with confidence</h3><p>Health monitoring, licences, app releases, reports, secure pairing, backups, and audit history stay in one place.</p></article></div>
+      <div class="section-heading"><div><p class="eyebrow">One operating system</p><h2>Built around real restaurant pressure.</h2></div><p>Every role sees the next action, while owners keep control of access, licences, devices, and performance.</p></div>
+      <div class="feature-grid">
+        <article><span>01</span><h3>Faster guest ordering</h3><p>Guests browse a visual menu and order from their paired table. Waiters can place orders when a tablet is unavailable.</p></article>
+        <article><span>02</span><h3>Clear kitchen priorities</h3><p>Confirmed tickets move through new, preparing, ready, and served states without paper slips or repeated calls.</p></article>
+        <article><span>03</span><h3>Visible service requests</h3><p>Water, waiter, and bill requests reach the right team with the table attached automatically.</p></article>
+        <article><span>04</span><h3>Protected restaurant control</h3><p>Role access, secure pairing, plan limits, backups, releases, and audit history stay under administrator control.</p></article>
+      </div>
     </section>
 
-    <section id="how" class="section split">
-      <div><p class="eyebrow">From arrival to checkout</p><h2>A clear flow for guests and staff.</h2><p class="lead small">Each step updates the next team in real time, while table sessions keep orders, requests, games, and billing correctly separated.</p></div>
-      <ol class="timeline"><li><b>Pair or select a table</b><span>The customer tablet or waiter starts a secure table session.</span></li><li><b>Place and confirm the order</b><span>Counter reviews the order; kitchen receives only confirmed items.</span></li><li><b>Prepare, serve, and assist</b><span>Kitchen status and waiter requests stay visible across staff devices.</span></li><li><b>Bill and close safely</b><span>Payment closes the session and locks table games immediately.</span></li></ol>
+    <section id="workflow" class="section workflow">
+      <div class="workflow-copy"><p class="eyebrow">From arrival to checkout</p><h2>A service flow everyone can follow.</h2><p>Table sessions keep orders, requests, games, and billing separated correctly&mdash;even when several tables are active at once.</p><a class="text-link" href="https://tableplay-api.onrender.com/trial/register">Try it with your own restaurant</a></div>
+      <ol class="timeline"><li><b>Pair or select a table</b><span>The customer tablet or waiter starts a secure table session.</span></li><li><b>Place and confirm the order</b><span>Counter reviews the order; kitchen receives only confirmed items.</span></li><li><b>Prepare, serve, and assist</b><span>Kitchen status and guest requests stay visible across staff devices.</span></li><li><b>Bill and close safely</b><span>Payment closes the visit and locks table games immediately.</span></li></ol>
+    </section>
+
+    <section class="section roles">
+      <div class="section-heading"><div><p class="eyebrow">One staff app</p><h2>Focused workspaces for every role.</h2></div><p>Staff sign in once and see only the tools and actions their role is allowed to use.</p></div>
+      <div class="role-grid"><article><span>A</span><h3>Administrator</h3><p>Tables, team, menu, pairing, reports, settings, automation, and system health.</p></article><article><span>C</span><h3>Counter</h3><p>Incoming orders, guest requests, bills, cash payments, and game timers.</p></article><article><span>K</span><h3>Kitchen</h3><p>A focused ticket queue with preparation and ready-for-service actions.</p></article><article><span>W</span><h3>Waiter</h3><p>Floor status, guest calls, ready orders, table visits, and waiter ordering.</p></article></div>
+    </section>
+
+    <section id="trial" class="section trial">
+      <div class="trial-card">
+        <div><p class="eyebrow">A practical free trial</p><h2>Test the complete restaurant flow before you buy.</h2><p>Use your real restaurant name, create staff, pair up to three customer tablets, build a menu, and complete a test order. Your account keeps its configuration when you choose a paid plan.</p></div>
+        <ul><li><span>1</span><div><b>Create your restaurant account</b><small>Verify your email and activate the secure trial.</small></div></li><li><span>2</span><div><b>Install the restaurant server</b><small>Follow the guided Windows setup and network checks.</small></div></li><li><span>3</span><div><b>Pair staff and customer devices</b><small>Use time-limited QR codes on the private restaurant network.</small></div></li><li><span>4</span><div><b>Run one end-to-end order</b><small>Confirm Counter, Kitchen, Waiter, Customer, and billing together.</small></div></li></ul>
+        <div class="trial-action"><div><strong>14-day Free Trial</strong><span>Up to 3 customer tablets &middot; no payment card</span></div><a class="button primary" href="https://tableplay-api.onrender.com/trial/register">Create restaurant account</a></div>
+      </div>
     </section>
 
     <section id="apps" class="section apps">
-      <div><p class="eyebrow">Two apps, one platform</p><h2>Simple for teams. Delightful for guests.</h2></div>
-      <div class="app-grid"><article><span class="app-icon">S</span><div><h3>TablePlay Staff</h3><p>One role-aware application for Admin, Counter, Kitchen, and Waiter on Windows or Android.</p><a href="https://tableplay-api.onrender.com/login">Open staff portal →</a></div></article><article><span class="app-icon orange">T</span><div><h3>TablePlay Customer</h3><p>A paired Android table app for menu browsing, ordering, service requests, live status, and games.</p><a href="https://tableplay-api.onrender.com">View installation portal →</a></div></article></div>
+      <div class="section-heading"><div><p class="eyebrow">Connected applications</p><h2>Simple for teams. Clear for guests.</h2></div><p>TablePlay uses a local restaurant server for day-to-day work and cloud services for licensing, account management, and secure releases.</p></div>
+      <div class="app-grid"><article><span class="app-icon">S</span><div><h3>TablePlay Staff</h3><p>Role-aware operations for Admin, Counter, Kitchen, and Waiter on Windows and Android.</p><a href="https://tableplay-api.onrender.com/login">Open staff portal</a></div></article><article><span class="app-icon orange">T</span><div><h3>TablePlay Customer</h3><p>A paired Android table app for visual menus, orders, live status, service requests, and games.</p><a href="https://tableplay-api.onrender.com/trial/register">Start with the free trial</a></div></article></div>
     </section>
 
-    <section class="cta"><div><p class="eyebrow">Ready to run your restaurant differently?</p><h2>Try TablePlay for 14 days.</h2></div><a class="button primary" href="https://tableplay-api.onrender.com/trial/register">Start free trial</a></section>
+    <section class="section faq"><div><p class="eyebrow">Before you start</p><h2>Questions restaurant owners ask.</h2></div><div class="faq-list"><details><summary>Will the restaurant stop if the internet goes down?</summary><p>Core ordering and staff workflows run on your private restaurant network. Internet is required for initial activation and periodic cloud licence checks.</p></details><details><summary>Can I keep my setup after the trial?</summary><p>Yes. Your restaurant profile, staff, tables, menu, and order history are preserved when your plan changes.</p></details><details><summary>How are tablets connected?</summary><p>An administrator creates a secure, single-use QR code for a specific table. The tablet and server must be on the same private Wi-Fi or LAN.</p></details><details><summary>Do all staff use the same account?</summary><p>No. Each person receives an appropriate role or PIN so permissions and activity stay traceable.</p></details></div></section>
+
+    <section class="cta"><div><p class="eyebrow">Ready for a calmer service flow?</p><h2>Start with one real order.</h2><p>Set up your restaurant and test TablePlay for 14 days.</p></div><a class="button primary" href="https://tableplay-api.onrender.com/trial/register">Start free trial</a></section>
   </main>
 
-  <footer><a class="brand" href="#top"><span>✦</span><strong>Table<span>Play</span></strong></a><p>Restaurant operations and table entertainment, together. <a href="https://tableplay-api.onrender.com/privacy">Privacy</a> · <a href="https://tableplay-api.onrender.com/terms">Terms</a></p><p>© 2026 TablePlay</p></footer>
+  <footer><a class="brand" href="#top"><span aria-hidden="true">TP</span><strong>Table<span>Play</span></strong></a><p>Restaurant operations and table entertainment, together.<br><a href="https://tableplay-api.onrender.com/privacy">Privacy</a> &middot; <a href="https://tableplay-api.onrender.com/terms">Terms</a></p><p>&copy; 2026 TablePlay</p></footer>
 </body>
 </html>

@@ -1036,6 +1036,20 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
     itemBuilder: (_, index) => children[index],
   );
 
+  void _selectSection(int index) {
+    if (index == sectionIndex || index < 0 || index >= destinations.length) {
+      return;
+    }
+    final locked = _destinationLocked(destinations[index]);
+    setState(() {
+      sectionIndex = index;
+      if (role == 'admin' && !locked) loading = true;
+    });
+    _startPolling();
+    _dataFingerprint = null;
+    load(force: true);
+  }
+
   Widget _admin() => switch (sectionIndex) {
     1 => _adminTables(),
     2 => _adminTeam(),
@@ -1054,7 +1068,46 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
     final orders = view['recent_orders'] as List? ?? [];
     final requests = view['requests'] as List? ?? [];
     final devices = view['devices'] as List? ?? [];
+    final pendingOrders = (stats['pending_orders'] as num?)?.toInt() ?? 0;
+    final readyOrders = orders
+        .where((order) => order['status'] == 'ready')
+        .length;
+    final activeDevices = devices
+        .where((device) => device['is_active'] == true)
+        .length;
     return _page([
+      OperationsPulse(
+        title: 'Live service pulse',
+        subtitle: 'Items across the restaurant need attention',
+        metrics: [
+          PulseMetric(
+            label: 'Pending orders',
+            value: pendingOrders,
+            icon: Icons.receipt_long_rounded,
+            color: TablePlayColors.gold,
+          ),
+          PulseMetric(
+            label: 'Ready to serve',
+            value: readyOrders,
+            icon: Icons.room_service_rounded,
+            color: const Color(0xff6ee7b7),
+          ),
+          PulseMetric(
+            label: 'Guest requests',
+            value: requests.length,
+            icon: Icons.notifications_active_rounded,
+            color: const Color(0xffff9b72),
+          ),
+          PulseMetric(
+            label: 'Active tablets',
+            value: activeDevices,
+            icon: Icons.tablet_android_rounded,
+            color: const Color(0xff93c5fd),
+            onTap: () => _selectSection(1),
+            countsTowardAttention: false,
+          ),
+        ],
+      ),
       const SectionTitle('Today at a glance'),
       _statsGrid([
         StatTile(
@@ -2481,11 +2534,12 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
             helperText: 'At least 8 characters',
             suffixIcon: IconButton(
               tooltip: showPassword ? 'Hide password' : 'Show password',
-              onPressed: () =>
-                  setSheet(() => showPassword = !showPassword),
-              icon: Icon(showPassword
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined),
+              onPressed: () => setSheet(() => showPassword = !showPassword),
+              icon: Icon(
+                showPassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+              ),
             ),
           ),
         ),
@@ -2504,9 +2558,11 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
             suffixIcon: IconButton(
               tooltip: showPin ? 'Hide PIN' : 'Show PIN',
               onPressed: () => setSheet(() => showPin = !showPin),
-              icon: Icon(showPin
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined),
+              icon: Icon(
+                showPin
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+              ),
             ),
           ),
         ),
@@ -3219,7 +3275,52 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
         sessions = data['sessions'] as List,
         requests = data['service_requests'] as List,
         games = data['game_sessions'] as List;
+    final pendingOrders = orders
+        .where((order) => order['status'] == 'pending')
+        .length;
+    final pendingRequests = requests
+        .where((request) => request['status'] == 'pending')
+        .length;
+    final unpaidTables = sessions.where((session) {
+      final bill = session['bill'];
+      return bill == null || bill['payment_status'] == 'unpaid';
+    }).length;
     return _page([
+      OperationsPulse(
+        title: 'Counter command strip',
+        subtitle: 'Review the live queue before guests have to wait',
+        metrics: [
+          PulseMetric(
+            label: 'Confirm orders',
+            value: pendingOrders,
+            icon: Icons.receipt_long_rounded,
+            color: TablePlayColors.gold,
+            onTap: () => _selectSection(1),
+          ),
+          PulseMetric(
+            label: 'Guest requests',
+            value: pendingRequests,
+            icon: Icons.notifications_active_rounded,
+            color: const Color(0xffff9b72),
+            onTap: () => _selectSection(2),
+          ),
+          PulseMetric(
+            label: 'Tables to settle',
+            value: unpaidTables,
+            icon: Icons.payments_rounded,
+            color: const Color(0xff93c5fd),
+            onTap: () => _selectSection(3),
+          ),
+          PulseMetric(
+            label: 'Game timers',
+            value: games.length,
+            icon: Icons.sports_esports_rounded,
+            color: const Color(0xffc4b5fd),
+            onTap: () => _selectSection(4),
+            countsTowardAttention: false,
+          ),
+        ],
+      ),
       if (sectionIndex == 0 || sectionIndex == 1) ...[
         SectionTitle(
           'Incoming orders',
@@ -3397,6 +3498,13 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
 
   Widget _kitchen() {
     final orders = data as List;
+    final confirmed = orders
+        .where((order) => order['status'] == 'confirmed')
+        .length;
+    final preparing = orders
+        .where((order) => order['status'] == 'preparing')
+        .length;
+    final ready = orders.where((order) => order['status'] == 'ready').length;
     final status = switch (sectionIndex) {
       1 => 'confirmed',
       2 => 'preparing',
@@ -3407,6 +3515,33 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
         ? orders
         : orders.where((order) => order['status'] == status).toList();
     return _page([
+      OperationsPulse(
+        title: 'Kitchen service pulse',
+        subtitle: 'Tickets are moving through the preparation line',
+        metrics: [
+          PulseMetric(
+            label: 'New tickets',
+            value: confirmed,
+            icon: Icons.notifications_active_rounded,
+            color: TablePlayColors.gold,
+            onTap: () => _selectSection(1),
+          ),
+          PulseMetric(
+            label: 'Preparing',
+            value: preparing,
+            icon: Icons.soup_kitchen_rounded,
+            color: const Color(0xff93c5fd),
+            onTap: () => _selectSection(2),
+          ),
+          PulseMetric(
+            label: 'Ready',
+            value: ready,
+            icon: Icons.room_service_rounded,
+            color: const Color(0xff6ee7b7),
+            onTap: () => _selectSection(3),
+          ),
+        ],
+      ),
       SectionTitle(
         destinations[sectionIndex].label,
         subtitle:
@@ -3425,7 +3560,41 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
         tables = data['tables'] as List,
         menu = data['menu'] as List? ?? [];
     final waiterOrdering = _featureAllowed('waiter_ordering');
+    final pendingRequests = requests
+        .where((request) => request['status'] == 'pending')
+        .length;
+    final occupiedTables = tables
+        .where((table) => (table['sessions'] as List? ?? []).isNotEmpty)
+        .length;
     return _page([
+      OperationsPulse(
+        title: 'Floor service pulse',
+        subtitle: 'Guests and ready orders are waiting on the floor',
+        metrics: [
+          PulseMetric(
+            label: 'Guest requests',
+            value: pendingRequests,
+            icon: Icons.notifications_active_rounded,
+            color: TablePlayColors.gold,
+            onTap: () => _selectSection(1),
+          ),
+          PulseMetric(
+            label: 'Ready orders',
+            value: ready.length,
+            icon: Icons.room_service_rounded,
+            color: const Color(0xff6ee7b7),
+            onTap: () => _selectSection(2),
+          ),
+          PulseMetric(
+            label: 'Occupied tables',
+            value: occupiedTables,
+            icon: Icons.table_bar_rounded,
+            color: const Color(0xff93c5fd),
+            onTap: () => _selectSection(3),
+            countsTowardAttention: false,
+          ),
+        ],
+      ),
       if (sectionIndex == 0 || sectionIndex == 1) ...[
         SectionTitle('Guest requests', subtitle: '${requests.length} waiting'),
         if (requests.isEmpty)
