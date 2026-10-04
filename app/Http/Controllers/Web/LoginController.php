@@ -45,7 +45,7 @@ class LoginController extends Controller
             return redirect()->route('verification.notice');
         }
 
-        return redirect()->intended('/'.$user->role->name);
+        return redirect()->intended($this->workspaceFor($user));
     }
 
     public function destroy(Request $request)
@@ -55,5 +55,10 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/login');
+    }
+
+    private function workspaceFor(User $user): string
+    {
+        return $user->hasRole('restaurant_owner') ? '/account' : '/'.$user->role->name;
     }
 }

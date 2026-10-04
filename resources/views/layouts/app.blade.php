@@ -30,6 +30,12 @@
                     <span class="nav-label">Platform</span>
                     <a class="nav-link {{ request()->routeIs('superadmin.*') ? 'active' : '' }}" href="{{ route('superadmin.index') }}"><x-icon name="license" /><span>Command center</span></a>
                 @endif
+                @if(auth()->user()->hasRole('restaurant_owner'))
+                    <span class="nav-label">Restaurant account</span>
+                    <a class="nav-link {{ request()->routeIs('account.*') ? 'active' : '' }}" href="{{ route('account.index') }}"><x-icon name="setup" /><span>Trial onboarding</span></a>
+                    <a class="nav-link" href="{{ route('privacy') }}"><x-icon name="license" /><span>Privacy policy</span></a>
+                    <a class="nav-link" href="{{ route('terms') }}"><x-icon name="report" /><span>Terms of service</span></a>
+                @endif
                 @if(auth()->user()->hasRole('admin'))
                     @php
                         $hasPlanFeature = static fn (string $feature): bool => (bool) data_get($licenseState, 'licensed', false)
@@ -86,11 +92,11 @@
                 <div class="topbar__tools"><span class="live-clock" data-live-clock></span><button class="icon-button" type="button" data-theme-toggle aria-label="Toggle dark mode"><span data-theme-icon><x-icon name="moon" /></span></button><span class="avatar avatar--top">{{ str(auth()->user()->name)->substr(0, 1)->upper() }}</span></div>
             </header>
             <main class="workspace__content">
-                @unless(auth()->user()->hasRole('superadmin'))
+                @if(auth()->user()->hasRole('admin','counter','kitchen','waiter'))
                     @foreach(data_get($licenseState,'warnings',[]) as $licenseWarning)
                         <section class="card" style="margin-bottom:16px;border-color:{{ $licenseWarning['level']==='danger'?'#fecaca':'#fde68a' }}"><div class="card__body"><strong>{{ $licenseWarning['message'] }}</strong> @if(auth()->user()->hasRole('admin'))<a href="{{ route('admin.license.index') }}">Open licence settings</a>@endif</div></section>
                     @endforeach
-                @endunless
+                @endif
                 @yield('content')
             </main>
         </section>

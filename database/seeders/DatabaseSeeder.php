@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             'kitchen' => 'Kitchen',
             'waiter' => 'Waiter',
             'superadmin' => 'Platform Super Admin',
+            'restaurant_owner' => 'Restaurant Owner',
         ])->map(fn ($display, $name) => Role::firstOrCreate(
             ['name' => $name],
             ['display_name' => $display],

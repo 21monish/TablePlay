@@ -51,12 +51,24 @@ class User extends Authenticatable implements MustVerifyEmailContract
         ];
     }
 
-    public function role() { return $this->belongsTo(Role::class); }
-    public function hasRole(string ...$roles): bool { return in_array($this->role?->name, $roles, true); }
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function cloudRestaurant()
+    {
+        return $this->hasOne(CloudRestaurant::class, 'owner_user_id');
+    }
+
+    public function hasRole(string ...$roles): bool
+    {
+        return in_array($this->role?->name, $roles, true);
+    }
 
     public function requiresEmailVerification(): bool
     {
         return (bool) config('tableplay.require_privileged_email_verification')
-            && $this->hasRole('admin', 'superadmin');
+            && $this->hasRole('admin', 'superadmin', 'restaurant_owner');
     }
 }

@@ -1,7 +1,22 @@
 <?php
 
+use App\Http\Controllers\Web\AdminController;
+use App\Http\Controllers\Web\AppUpdateController;
+use App\Http\Controllers\Web\AutomationController;
+use App\Http\Controllers\Web\BrandAssetController;
+use App\Http\Controllers\Web\CloudManagementController;
+use App\Http\Controllers\Web\CounterController;
+use App\Http\Controllers\Web\EmailVerificationController;
+use App\Http\Controllers\Web\HelpController;
+use App\Http\Controllers\Web\KitchenController;
+use App\Http\Controllers\Web\LicenseController;
+use App\Http\Controllers\Web\LoginController;
+use App\Http\Controllers\Web\PortalController;
+use App\Http\Controllers\Web\RestaurantAccountController;
+use App\Http\Controllers\Web\SetupWizardController;
+use App\Http\Controllers\Web\SuperAdminController;
+use App\Http\Controllers\Web\TrialRegistrationController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Web\{AdminController,AppUpdateController,AutomationController,BrandAssetController,CloudManagementController,CounterController,EmailVerificationController,HelpController,KitchenController,LicenseController,LoginController,PortalController,SetupWizardController,SuperAdminController};
 
 Route::get('/', PortalController::class)->name('portal');
 Route::view('/privacy', 'legal.privacy')->name('privacy');
@@ -11,6 +26,8 @@ Route::get('/favicon.ico', [BrandAssetController::class, 'favicon'])->name('bran
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:20,1')->name('login.store');
+    Route::get('/trial/register', [TrialRegistrationController::class, 'create'])->name('trial.create');
+    Route::post('/trial/register', [TrialRegistrationController::class, 'store'])->middleware('throttle:5,60')->name('trial.store');
 });
 Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware('auth')->group(function () {
@@ -21,36 +38,41 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:6,1')->name('verification.send');
 });
 Route::post('/help/chat', [HelpController::class, 'chat'])->middleware(['auth', 'throttle:60,1'])->name('help.chat');
-Route::prefix('superadmin')->name('superadmin.')->middleware(['auth','privileged.verified','role:superadmin'])->group(function(){
-    Route::get('/',[SuperAdminController::class,'index'])->name('index');
-    Route::post('plans',[SuperAdminController::class,'storePlan'])->name('plans.store');
-    Route::put('plans/{plan}',[SuperAdminController::class,'updatePlan'])->name('plans.update');
-    Route::post('plans/{plan}/toggle',[SuperAdminController::class,'togglePlan'])->name('plans.toggle');
-    Route::delete('plans/{plan}',[SuperAdminController::class,'destroyPlan'])->name('plans.destroy');
-    Route::post('activate',[SuperAdminController::class,'activate'])->name('activate');
-    Route::post('subscriptions/{subscription}/suspend',[SuperAdminController::class,'suspend'])->name('suspend');
-    Route::post('subscriptions/{subscription}/resume',[SuperAdminController::class,'resume'])->name('resume');
-    Route::get('cloud',[CloudManagementController::class,'index'])->name('cloud.index');
-    Route::get('cloud/restaurants',[CloudManagementController::class,'index'])->name('cloud.restaurants.index');
-    Route::get('cloud/export',[CloudManagementController::class,'exportRestaurants'])->name('cloud.export');
-    Route::put('cloud/settings',[CloudManagementController::class,'updateCommercialSettings'])->name('cloud.settings.update');
-    Route::post('cloud/restaurants',[CloudManagementController::class,'storeRestaurant'])->name('cloud.restaurants.store');
-    Route::put('cloud/restaurants/{restaurant}',[CloudManagementController::class,'updateRestaurant'])->name('cloud.restaurants.update');
-    Route::post('cloud/restaurants/{restaurant}/status',[CloudManagementController::class,'restaurantStatus'])->name('cloud.restaurants.status');
-    Route::post('cloud/subscriptions/{subscription}/renew',[CloudManagementController::class,'renew'])->name('cloud.subscriptions.renew');
-    Route::post('cloud/subscriptions/{subscription}/status',[CloudManagementController::class,'subscriptionStatus'])->name('cloud.subscriptions.status');
-    Route::post('cloud/subscriptions/{subscription}/schedule',[CloudManagementController::class,'scheduleSubscription'])->name('cloud.subscriptions.schedule');
-    Route::post('cloud/subscriptions/{subscription}/keys',[CloudManagementController::class,'issueKey'])->name('cloud.keys.issue');
-    Route::post('cloud/offline-requests/import',[CloudManagementController::class,'importOfflineRequest'])->name('cloud.offline-requests.import');
-    Route::get('cloud/offline-requests/{offlineRequest}/license',[CloudManagementController::class,'downloadOfflineLicense'])->name('cloud.offline-requests.license');
-    Route::post('cloud/restaurants/{restaurant}/invoices',[CloudManagementController::class,'storeInvoice'])->name('cloud.invoices.store');
-    Route::get('cloud/invoices/{invoice}',[CloudManagementController::class,'invoice'])->name('cloud.invoices.show');
-    Route::post('cloud/restaurants/{restaurant}/payments',[CloudManagementController::class,'storePayment'])->name('cloud.payments.store');
-    Route::post('cloud/payments/{payment}/refund',[CloudManagementController::class,'refundPayment'])->name('cloud.payments.refund');
-    Route::post('cloud/invoices/{invoice}/void',[CloudManagementController::class,'voidInvoice'])->name('cloud.invoices.void');
-    Route::post('cloud/installations/{installation}/deactivate',[CloudManagementController::class,'deactivate'])->name('cloud.installations.deactivate');
-    Route::post('cloud/installations/{installation}/transfer',[CloudManagementController::class,'transfer'])->name('cloud.installations.transfer');
-    Route::get('cloud/installations/{installation}/license',[CloudManagementController::class,'downloadLicense'])->name('cloud.installations.license');
+Route::prefix('account')->name('account.')->middleware(['auth', 'privileged.verified', 'role:restaurant_owner'])->group(function () {
+    Route::get('/', [RestaurantAccountController::class, 'index'])->name('index');
+    Route::get('/installer', [RestaurantAccountController::class, 'downloadInstaller'])->middleware('throttle:5,1')->name('installer.download');
+    Route::post('/activation-key', [RestaurantAccountController::class, 'issueActivationKey'])->middleware('throttle:3,10')->name('activation-key');
+});
+Route::prefix('superadmin')->name('superadmin.')->middleware(['auth', 'privileged.verified', 'role:superadmin'])->group(function () {
+    Route::get('/', [SuperAdminController::class, 'index'])->name('index');
+    Route::post('plans', [SuperAdminController::class, 'storePlan'])->name('plans.store');
+    Route::put('plans/{plan}', [SuperAdminController::class, 'updatePlan'])->name('plans.update');
+    Route::post('plans/{plan}/toggle', [SuperAdminController::class, 'togglePlan'])->name('plans.toggle');
+    Route::delete('plans/{plan}', [SuperAdminController::class, 'destroyPlan'])->name('plans.destroy');
+    Route::post('activate', [SuperAdminController::class, 'activate'])->name('activate');
+    Route::post('subscriptions/{subscription}/suspend', [SuperAdminController::class, 'suspend'])->name('suspend');
+    Route::post('subscriptions/{subscription}/resume', [SuperAdminController::class, 'resume'])->name('resume');
+    Route::get('cloud', [CloudManagementController::class, 'index'])->name('cloud.index');
+    Route::get('cloud/restaurants', [CloudManagementController::class, 'index'])->name('cloud.restaurants.index');
+    Route::get('cloud/export', [CloudManagementController::class, 'exportRestaurants'])->name('cloud.export');
+    Route::put('cloud/settings', [CloudManagementController::class, 'updateCommercialSettings'])->name('cloud.settings.update');
+    Route::post('cloud/restaurants', [CloudManagementController::class, 'storeRestaurant'])->name('cloud.restaurants.store');
+    Route::put('cloud/restaurants/{restaurant}', [CloudManagementController::class, 'updateRestaurant'])->name('cloud.restaurants.update');
+    Route::post('cloud/restaurants/{restaurant}/status', [CloudManagementController::class, 'restaurantStatus'])->name('cloud.restaurants.status');
+    Route::post('cloud/subscriptions/{subscription}/renew', [CloudManagementController::class, 'renew'])->name('cloud.subscriptions.renew');
+    Route::post('cloud/subscriptions/{subscription}/status', [CloudManagementController::class, 'subscriptionStatus'])->name('cloud.subscriptions.status');
+    Route::post('cloud/subscriptions/{subscription}/schedule', [CloudManagementController::class, 'scheduleSubscription'])->name('cloud.subscriptions.schedule');
+    Route::post('cloud/subscriptions/{subscription}/keys', [CloudManagementController::class, 'issueKey'])->name('cloud.keys.issue');
+    Route::post('cloud/offline-requests/import', [CloudManagementController::class, 'importOfflineRequest'])->name('cloud.offline-requests.import');
+    Route::get('cloud/offline-requests/{offlineRequest}/license', [CloudManagementController::class, 'downloadOfflineLicense'])->name('cloud.offline-requests.license');
+    Route::post('cloud/restaurants/{restaurant}/invoices', [CloudManagementController::class, 'storeInvoice'])->name('cloud.invoices.store');
+    Route::get('cloud/invoices/{invoice}', [CloudManagementController::class, 'invoice'])->name('cloud.invoices.show');
+    Route::post('cloud/restaurants/{restaurant}/payments', [CloudManagementController::class, 'storePayment'])->name('cloud.payments.store');
+    Route::post('cloud/payments/{payment}/refund', [CloudManagementController::class, 'refundPayment'])->name('cloud.payments.refund');
+    Route::post('cloud/invoices/{invoice}/void', [CloudManagementController::class, 'voidInvoice'])->name('cloud.invoices.void');
+    Route::post('cloud/installations/{installation}/deactivate', [CloudManagementController::class, 'deactivate'])->name('cloud.installations.deactivate');
+    Route::post('cloud/installations/{installation}/transfer', [CloudManagementController::class, 'transfer'])->name('cloud.installations.transfer');
+    Route::get('cloud/installations/{installation}/license', [CloudManagementController::class, 'downloadLicense'])->name('cloud.installations.license');
 });
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'privileged.verified', 'role:admin'])->group(function () {
     Route::get('/', [AdminController::class, 'index'])->name('overview');

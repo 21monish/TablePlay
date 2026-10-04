@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Notifications\TrialWelcomeNotification;
+use App\Services\TrialProvisioningService;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\RedirectResponse;
@@ -46,7 +48,7 @@ class EmailVerificationController extends Controller
         return back()->with('status', 'A new verification link has been sent to '.$user->email.'.');
     }
 
-    public function verify(EmailVerificationRequest $request): RedirectResponse
+    public function verify(EmailVerificationRequest $request, TrialProvisioningService $trials): RedirectResponse
     {
         $user = $request->user()->loadMissing('role');
 
@@ -56,11 +58,31 @@ class EmailVerificationController extends Controller
             event(new Verified($user));
         }
 
-        return redirect($this->workspaceFor($user))->with('status', 'Email address verified successfully.');
+        $welcomeFailed = false;
+        if ($user->hasRole('restaurant_owner')) {
+            $user = $user->fresh('role', 'cloudRestaurant');
+            $subscription = $trials->provision($user);
+
+            if (! $user->cloudRestaurant->welcome_email_sent_at) {
+                try {
+                    $user->notify(new TrialWelcomeNotification($subscription));
+                    $user->cloudRestaurant->update(['welcome_email_sent_at' => now()]);
+                } catch (Throwable $exception) {
+                    report($exception);
+                    $welcomeFailed = true;
+                }
+            }
+        }
+
+        $response = redirect($this->workspaceFor($user))->with('status', 'Email address verified successfully.');
+
+        return $welcomeFailed
+            ? $response->with('warning', 'Your trial is active, but the welcome email could not be sent. You can continue setup from this account.')
+            : $response;
     }
 
     private function workspaceFor($user): string
     {
-        return '/'.($user->role?->name ?? 'login');
+        return $user->hasRole('restaurant_owner') ? '/account' : '/'.($user->role?->name ?? 'login');
     }
 }

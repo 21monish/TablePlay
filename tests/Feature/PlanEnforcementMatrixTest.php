@@ -2,21 +2,24 @@
 
 namespace Tests\Feature;
 
-use App\Models\{
-    CommercialPlan,
-    Device,
-    DevicePairing,
-    DiningTable,
-    GameSession,
-    Order,
-    RestaurantSetting,
-    Role,
-    TableSession,
-    User
-};
-use App\Services\{DevicePairingService, EntitlementService, GameAccessService, OrderWorkflowService};
+use App\Models\CommercialPlan;
+use App\Models\Device;
+use App\Models\DevicePairing;
+use App\Models\DiningTable;
+use App\Models\GameSession;
+use App\Models\Order;
+use App\Models\RestaurantSetting;
+use App\Models\Role;
+use App\Models\TableSession;
+use App\Models\User;
+use App\Services\AutomationService;
+use App\Services\DevicePairingService;
+use App\Services\EntitlementService;
+use App\Services\GameAccessService;
+use App\Services\OrderWorkflowService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -31,7 +34,7 @@ class PlanEnforcementMatrixTest extends TestCase
     {
         $matrix = [
             'trial' => [
-                'name' => 'Free Trial', 'trial_days' => 30, 'paired_tables' => 3,
+                'name' => 'Free Trial', 'trial_days' => 14, 'paired_tables' => 3,
                 'customer_app' => true, 'games' => true, 'advanced_reports' => false, 'automation' => false,
             ],
             'simple' => [
@@ -275,7 +278,7 @@ class PlanEnforcementMatrixTest extends TestCase
         $this->assertTrue($settings->fresh()->automation_enabled);
         $this->assertDatabaseCount('automation_runs', 0);
 
-        $scheduled = app(\App\Services\AutomationService::class)->runScheduled();
+        $scheduled = app(AutomationService::class)->runScheduled();
         $this->assertTrue((bool) ($scheduled['skipped'] ?? false), 'Scheduled automation must not run when the plan excludes automation.');
         $this->assertDatabaseCount('automation_runs', 0);
     }
@@ -286,12 +289,12 @@ class PlanEnforcementMatrixTest extends TestCase
         $admin = $this->user('admin');
         $this->activate('simple');
 
-        $automation = \Mockery::mock(\App\Services\AutomationService::class);
+        $automation = \Mockery::mock(AutomationService::class);
         $automation->shouldReceive('createBackup')->twice()->andReturn([
             'filename' => 'tableplay-test-backup.sql',
             'sha256' => str_repeat('a', 64),
         ]);
-        $this->app->instance(\App\Services\AutomationService::class, $automation);
+        $this->app->instance(AutomationService::class, $automation);
 
         $this->actingAs($admin, 'web')->post('/admin/automation/backup')
             ->assertRedirect()
@@ -451,7 +454,7 @@ class PlanEnforcementMatrixTest extends TestCase
         ]);
     }
 
-    private function assertPlanDenial(\Illuminate\Testing\TestResponse $response): void
+    private function assertPlanDenial(TestResponse $response): void
     {
         $response->assertJsonStructure(['message']);
         $this->assertStringContainsString('plan', Str::lower((string) $response->json('message')));
