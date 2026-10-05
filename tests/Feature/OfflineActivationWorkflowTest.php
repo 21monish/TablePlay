@@ -16,6 +16,9 @@ use App\Services\{EntitlementService, LicenseSignatureService, LocalLicenseServi
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Query\Grammars\Grammar;
+use Tests\Support\PostgresAggregateLockGuard;
 use Tests\TestCase;
 
 class OfflineActivationWorkflowTest extends TestCase
@@ -25,6 +28,7 @@ class OfflineActivationWorkflowTest extends TestCase
     private User $admin;
     private User $superadmin;
     private array $keys;
+    private Grammar $originalGrammar;
 
     protected function setUp(): void
     {
@@ -39,6 +43,15 @@ class OfflineActivationWorkflowTest extends TestCase
 
         $this->admin = $this->user('admin');
         $this->superadmin = $this->user('superadmin');
+        $connection = DB::connection();
+        $this->originalGrammar = $connection->getQueryGrammar();
+        $connection->setQueryGrammar(new PostgresAggregateLockGuard($connection));
+    }
+
+    protected function tearDown(): void
+    {
+        DB::connection()->setQueryGrammar($this->originalGrammar);
+        parent::tearDown();
     }
 
     public function test_complete_usb_only_activation_round_trip(): void

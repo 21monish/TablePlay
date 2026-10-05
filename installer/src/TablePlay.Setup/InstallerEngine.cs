@@ -1277,6 +1277,10 @@ internal static class InstallerEngine
     {
         var phpIni = Path.Combine(root, "php", "php.ini");
         var extensionDirectory = Path.Combine(root, "php", "ext").Replace('\\', '/');
+        var caBundle = Path.Combine(root, "php", "extras", "ssl", "cacert.pem");
+        if (!File.Exists(caBundle) || !File.ReadAllText(caBundle).Contains("-----BEGIN CERTIFICATE-----", StringComparison.Ordinal))
+            throw new InvalidDataException("The PHP certificate trust bundle is missing or invalid. Repair TablePlay using a complete installer.");
+        var certificatePath = caBundle.Replace('\\', '/');
         var phpConfiguration = $"""
             [PHP]
             extension_dir="{extensionDirectory}"
@@ -1299,6 +1303,8 @@ internal static class InstallerEngine
             opcache.validate_timestamps=0
             opcache.jit=off
             extension=curl
+            curl.cainfo="{certificatePath}"
+            openssl.cafile="{certificatePath}"
             extension=fileinfo
             extension=mbstring
             extension=openssl
@@ -1320,6 +1326,8 @@ internal static class InstallerEngine
             "<?php $required=['mbstring','openssl','pdo_mysql','mysqli','curl','fileinfo','zip','intl','sodium','Zend OPcache']; "
             + "$missing=array_values(array_filter($required,fn($name)=>!extension_loaded($name))); "
             + "if($missing){fwrite(STDERR,'Missing PHP extensions: '.implode(', ',$missing)); exit(1);} "
+            + "$ca=ini_get('curl.cainfo'); $sslCa=ini_get('openssl.cafile'); "
+            + "if(!$ca || $ca!==$sslCa || !is_readable($ca) || !openssl_x509_read(file_get_contents($ca))){fwrite(STDERR,'PHP HTTPS certificate trust is not configured correctly.'); exit(1);} "
             + "$pair=sodium_crypto_sign_keypair(); $private=sodium_crypto_sign_secretkey($pair); $public=sodium_crypto_sign_publickey($pair); "
             + "$message=random_bytes(32); $signature=sodium_crypto_sign_detached($message,$private); "
             + "if(!sodium_crypto_sign_verify_detached($signature,$message,$public)){fwrite(STDERR,'Ed25519 signing self-test failed.'); exit(1);} "

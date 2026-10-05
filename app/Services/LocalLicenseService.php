@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\{CommercialPlan, LicenseSyncLog, LocalOfflineActivationRequest, RestaurantSubscription, TablePlayInstallation};
 use Illuminate\Support\Carbon;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -37,12 +38,28 @@ class LocalLicenseService
         $installation = $this->installation();
         $url = rtrim($cloudUrl ?: $installation->cloud_url ?: (string) config('tableplay.cloud_url'), '/');
         if ($url === '') throw ValidationException::withMessages(['cloud_url' => 'Enter the TablePlay Cloud address before activation.']);
-        $response = Http::acceptJson()->timeout((int) config('tableplay.sync_timeout_seconds', 12))->post($url.'/api/cloud/v1/licenses/activate', [
-            'license_key' => $licenseKey, 'installation_uuid' => $installation->installation_uuid,
-            'device_name' => php_uname('n') ?: 'Restaurant server', 'device_fingerprint' => $installation->device_fingerprint,
-            'server_version' => $this->serverVersion(),
-        ]);
-        if (! $response->successful()) throw ValidationException::withMessages(['license_key' => $response->json('message') ?: 'TablePlay Cloud rejected this activation.']);
+        try {
+            $response = Http::acceptJson()->connectTimeout(10)
+                ->timeout((int) config('tableplay.activation_timeout_seconds', 90))
+                ->post($url.'/api/cloud/v1/licenses/activate', [
+                    'license_key' => $licenseKey, 'installation_uuid' => $installation->installation_uuid,
+                    'device_name' => php_uname('n') ?: 'Restaurant server', 'device_fingerprint' => $installation->device_fingerprint,
+                    'server_version' => $this->serverVersion(),
+                ]);
+        } catch (ConnectionException $error) {
+            $message = str_contains($error->getMessage(), 'cURL error 60')
+                ? 'This server cannot verify the TablePlay Cloud HTTPS certificate. Repair the TablePlay PHP certificate trust configuration, then try activation again.'
+                : 'TablePlay Cloud could not be reached in time. Check this server internet connection and Cloud URL, then try again. The cloud server may still be starting.';
+            throw ValidationException::withMessages(['cloud_url' => $message]);
+        }
+        if (! $response->successful()) {
+            $message = match (true) {
+                $response->status() === 404 => 'The Cloud URL does not provide TablePlay licence activation. Enter the base address, such as https://tableplay-api.onrender.com, without /account or another page path.',
+                $response->serverError() => 'TablePlay Cloud is temporarily unable to activate this licence. Please try again shortly.',
+                default => $response->json('message') ?: 'TablePlay Cloud rejected this activation.',
+            };
+            throw ValidationException::withMessages([$response->status() === 404 ? 'cloud_url' : 'license_key' => $message]);
+        }
         $subscription = $this->installEnvelope((array) $response->json('license'), 'cloud');
         $installation->update(['cloud_url' => $url, 'activation_token' => $response->json('installation_token'), 'license_reference' => $subscription->license_reference, 'last_sync_at' => now(), 'last_sync_error' => null]);
         return $subscription;

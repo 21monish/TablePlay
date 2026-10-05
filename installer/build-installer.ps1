@@ -274,6 +274,11 @@ New-Item -ItemType Directory -Path $commandDirectory -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $installerRoot 'laravel\BootstrapInstallation.php') -Destination (Join-Path $commandDirectory 'BootstrapInstallation.php') -Force
 
 Write-Host 'Copying portable PHP and MariaDB runtimes...'
+$phpCaBundle = Join-Path $PhpSource 'extras\ssl\cacert.pem'
+if (-not (Test-Path -LiteralPath $phpCaBundle -PathType Leaf) -or
+    -not (Select-String -LiteralPath $phpCaBundle -SimpleMatch '-----BEGIN CERTIFICATE-----' -Quiet)) {
+    throw 'The PHP source must include a valid extras\ssl\cacert.pem certificate trust bundle for secure cloud licence activation.'
+}
 Copy-Directory -Source $PhpSource -Destination (Join-Path $payloadRoot 'php')
 $stagedPhpIni = Join-Path $payloadRoot 'php\php.ini'
 if (Test-Path -LiteralPath $stagedPhpIni) {

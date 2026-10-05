@@ -146,6 +146,27 @@ try
 
     if (args.Length > 0)
     {
+        var certificateRoot = Path.Combine(root, "certificate-configuration");
+        Directory.CreateDirectory(Path.Combine(certificateRoot, "php", "extras", "ssl"));
+        try
+        {
+            InstallerEngine.WritePhpConfiguration(certificateRoot);
+            throw new Exception("PHP configuration accepted a missing certificate trust bundle.");
+        }
+        catch (InvalidDataException) { }
+        var certificateBundle = Path.Combine(certificateRoot, "php", "extras", "ssl", "cacert.pem");
+        File.Copy(Path.Combine(args[0], "extras", "ssl", "cacert.pem"), certificateBundle);
+        InstallerEngine.WritePhpConfiguration(certificateRoot);
+        var certificateIni = File.ReadAllText(Path.Combine(certificateRoot, "php", "php.ini"));
+        var expectedCertificatePath = certificateBundle.Replace('\\', '/');
+        if (!certificateIni.Contains($"curl.cainfo=\"{expectedCertificatePath}\"")
+            || !certificateIni.Contains($"openssl.cafile=\"{expectedCertificatePath}\""))
+            throw new Exception("PHP configuration did not provision both HTTPS certificate trust settings.");
+        Console.WriteLine("PASS: PHP HTTPS trust requires a certificate bundle and configures cURL and OpenSSL.");
+    }
+
+    if (args.Length > 0)
+    {
         var runtimeRoot = Path.Combine(root, "runtime");
         Directory.CreateDirectory(Path.Combine(runtimeRoot, "server"));
         Directory.CreateDirectory(Path.Combine(runtimeRoot, "config"));

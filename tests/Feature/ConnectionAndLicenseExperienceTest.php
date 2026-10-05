@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\{CommercialPlan, RestaurantSetting, Role, User};
 use App\Services\EntitlementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use App\Models\TablePlayInstallation;
 use Tests\TestCase;
 
 class ConnectionAndLicenseExperienceTest extends TestCase
@@ -83,5 +85,38 @@ class ConnectionAndLicenseExperienceTest extends TestCase
             'password' => 'password123',
             'is_active' => true,
         ]);
+    }
+
+    public function test_activation_connection_failure_returns_validation_without_changing_the_licence(): void
+    {
+        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('cURL error 60: SSL certificate problem'));
+        $before = app(EntitlementService::class)->subscription()->id;
+        $this->actingAs($this->user('admin'))->from(route('admin.license.index'))
+            ->post(route('admin.license.activate'), ['cloud_url' => 'https://cloud.tableplay.test', 'license_key' => 'TP-TEST'])
+            ->assertRedirect(route('admin.license.index'))
+            ->assertSessionHasErrors(['cloud_url' => 'This server cannot verify the TablePlay Cloud HTTPS certificate. Repair the TablePlay PHP certificate trust configuration, then try activation again.']);
+        $this->assertSame($before, app(EntitlementService::class)->subscription()->id);
+        $this->assertNull(TablePlayInstallation::findOrFail(1)->activation_token);
+    }
+
+    public function test_activation_timeout_is_recoverable_without_retrying_a_single_use_key(): void
+    {
+        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: Operation timed out'));
+        $this->actingAs($this->user('admin'))->from(route('admin.license.index'))
+            ->post(route('admin.license.activate'), ['cloud_url' => 'https://cloud.tableplay.test', 'license_key' => 'TP-TEST'])
+            ->assertRedirect(route('admin.license.index'))->assertSessionHasErrors('cloud_url');
+        $this->assertNull(TablePlayInstallation::findOrFail(1)->activation_token);
+    }
+
+    public function test_activation_reports_incorrect_cloud_url_and_temporary_cloud_errors(): void
+    {
+        $admin = $this->user('admin');
+        Http::fakeSequence()->push('<html>Not Found</html>', 404)->push('<html>Server Error</html>', 503);
+        $this->actingAs($admin)->post(route('admin.license.activate'), [
+            'cloud_url' => 'https://cloud.tableplay.test/account', 'license_key' => 'TP-TEST',
+        ])->assertSessionHasErrors('cloud_url');
+        $this->actingAs($admin)->post(route('admin.license.activate'), [
+            'cloud_url' => 'https://cloud.tableplay.test', 'license_key' => 'TP-TEST',
+        ])->assertSessionHasErrors(['license_key' => 'TablePlay Cloud is temporarily unable to activate this licence. Please try again shortly.']);
     }
 }

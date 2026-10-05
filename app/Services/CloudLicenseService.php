@@ -57,8 +57,11 @@ class CloudLicenseService
                 && ! hash_equals((string) $installation->device_fingerprint, $incomingFingerprint)) {
                 $this->invalid('device_fingerprint', 'This installation identifier is already bound to another computer. Use the licence transfer workflow.');
             }
+            // The subscription row is already locked, serializing capacity
+            // checks across online and offline activation. PostgreSQL cannot
+            // apply FOR UPDATE to an aggregate count.
             if (! $installation && $subscription->max_installations !== null
-                && $subscription->installations()->where('status', 'active')->lockForUpdate()->count() >= $subscription->max_installations) {
+                && $subscription->installations()->where('status', 'active')->count() >= $subscription->max_installations) {
                 $this->invalid('license_key', 'This licence has reached its active server limit. Deactivate or transfer the old installation first.');
             }
 
@@ -196,8 +199,10 @@ class CloudLicenseService
                 $this->invalid('subscription_id', 'This server installation is already registered to another restaurant.');
             }
             $this->assertRequestMatchesInstallation($payload, $installation);
+            // Both activation paths hold the subscription row lock before
+            // counting, so the aggregate does not need a row-lock clause.
             if (! $installation && $subscription->max_installations !== null
-                && $subscription->installations()->where('status', 'active')->lockForUpdate()->count() >= $subscription->max_installations) {
+                && $subscription->installations()->where('status', 'active')->count() >= $subscription->max_installations) {
                 $this->invalid('subscription_id', 'This subscription has reached its active server limit. Deactivate or transfer the old installation first.');
             }
 
