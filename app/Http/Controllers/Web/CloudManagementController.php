@@ -302,11 +302,31 @@ class CloudManagementController extends Controller
         return back()->with('status', 'The old server installation was deactivated and can now be replaced.');
     }
 
-    public function transfer(CloudInstallation $installation, CloudLicenseService $licenses)
+    public function transfer(Request $request, CloudInstallation $installation, CloudLicenseService $licenses, LicenseSignatureService $signatures, AuditService $audit)
     {
         $this->ensureCloud();
-        $installation->update(['status' => 'transferred', 'deactivated_at' => now()]);
-        return back()->with('status', 'Transfer approved. Install TablePlay on the replacement server with this activation key.')->with('issued_license_key', $licenses->issueKey($installation->subscription));
+        if (! $signatures->signingReady()) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['installation' => 'Configure Cloud licence signing before transferring an installation.']);
+        }
+
+        $plainKey = DB::transaction(function () use ($request, $installation, $licenses, $audit) {
+            // Match activation's subscription-first lock order. Key creation,
+            // revocation and the audit record must either all succeed or roll back.
+            $subscription = CloudSubscription::with('restaurant', 'plan')->lockForUpdate()->findOrFail($installation->cloud_subscription_id);
+            $locked = CloudInstallation::lockForUpdate()->findOrFail($installation->id);
+            if ($locked->status !== 'active' || ! in_array($licenses->status($subscription), ['trial', 'active', 'grace'], true)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['installation' => 'Only an active installation with an eligible subscription can be transferred. No renewal or extension was applied.']);
+            }
+
+            $key = $licenses->issueKey($subscription);
+            $locked->update(['status' => 'transferred', 'deactivated_at' => now()]);
+            $audit->record($request, 'cloud_installation.transferred', $locked,
+                ['status' => 'active'],
+                ['status' => 'transferred', 'installation_uuid' => $locked->installation_uuid, 'cloud_subscription_id' => $subscription->id]);
+            return $key;
+        });
+
+        return back()->with('status', 'Transfer approved. Activate the replacement server with this one-time key. The subscription expiry and grace period are unchanged.')->with('issued_license_key', $plainKey);
     }
 
     public function downloadLicense(CloudInstallation $installation, CloudLicenseService $licenses)

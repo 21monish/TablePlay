@@ -30,6 +30,35 @@
 @empty<div class="empty-state cloud-empty"><span class="empty-state__icon"><x-icon name="team" size="26" /></span><strong>{{ request()->hasAny(['q','status','plan_id','subscription_status','renewal_days','health']) ? 'No customers match these filters' : 'Add your first restaurant customer' }}</strong><p>{{ request()->hasAny(['q','status','plan_id','subscription_status','renewal_days','health']) ? 'Try resetting one or more filters to expand the results.' : 'Create a customer, choose a plan and issue the first secure activation key.' }}</p>@if(request()->hasAny(['q','status','plan_id','subscription_status','renewal_days','health']))<a class="button button--secondary button--small" href="{{ route('superadmin.cloud.index') }}">Clear all filters</a>@else<button class="button button--accent button--small" type="button" data-dialog-open="new-customer"><x-icon name="plus" size="15" /> Add first customer</button>@endif</div>@endforelse
 </div>
 
+<section class="card" style="margin-top:18px">
+    <div class="card__header"><div><h2>Server installations</h2><p>Transfer access to a replacement server without renewing the subscription or changing restaurant data.</p></div></div>
+    <div class="table-wrap"><table class="data-table data-table--responsive">
+        <thead><tr><th>Restaurant / plan</th><th>Server identity</th><th>Status</th><th>Subscription expires</th><th>Action</th></tr></thead>
+        <tbody>
+        @forelse($restaurants->flatMap(fn ($restaurant) => $restaurant->subscriptions)->flatMap(fn ($subscription) => $subscription->installations) as $installation)
+            @php($installationSubscription = $restaurants->flatMap(fn ($restaurant) => $restaurant->subscriptions)->firstWhere('id', $installation->cloud_subscription_id))
+            <tr>
+                <td data-label="Restaurant / plan">{{ $restaurants->firstWhere('id', $installationSubscription->cloud_restaurant_id)->name }}<br><small>{{ $installationSubscription->plan->name }}</small></td>
+                <td data-label="Server identity"><strong>{{ $installation->device_name }}</strong><br><small>{{ $installation->installation_uuid }}</small></td>
+                <td data-label="Status"><x-status :value="$installation->status" /></td>
+                <td data-label="Subscription expires">{{ $installationSubscription->expires_at?->format('d M Y') ?? 'No expiry' }}</td>
+                <td data-label="Action">
+                    @if($installation->status === 'active')
+                    <form method="post" action="{{ route('superadmin.cloud.installations.transfer', $installation) }}">
+                        @csrf
+                        <button class="button button--secondary button--small" type="submit" @disabled(!$signingReady)
+                            data-confirm-title="Transfer this installation?"
+                            data-confirm="The old server will lose Cloud access. A one-time activation key will be issued for the replacement server. Subscription expiry and grace dates will not change. Offline copies may remain usable until their signed verification deadline."
+                            data-confirm-tone="warning">Transfer installation</button>
+                    </form>
+                    @else<span class="muted">No transfer available</span>@endif
+                </td>
+            </tr>
+        @empty<tr><td colspan="5">No server installations found.</td></tr>@endforelse
+        </tbody>
+    </table></div>
+</section>
+
 <dialog class="modal-dialog" id="new-customer"><div class="modal-dialog__surface"><div class="modal-dialog__header"><div><span class="superadmin-kicker">Onboarding</span><h2>Add restaurant customer</h2></div><button class="icon-button" type="button" data-dialog-close><x-icon name="close" /></button></div><form method="post" action="{{ route('superadmin.cloud.restaurants.store') }}">@csrf<div class="modal-dialog__body"><div class="form-grid"><label class="field field--full">Restaurant name<input name="name" required></label><label class="field">Owner name<input name="owner_name"></label><label class="field">Owner email<input type="email" name="owner_email"></label><label class="field">Owner phone<input name="owner_phone"></label><label class="field">Initial plan<select name="commercial_plan_id" required>@foreach($plans as $plan)<option value="{{ $plan->id }}">{{ $plan->name }}</option>@endforeach</select></label><label class="field">Duration days<input type="number" name="duration_days" min="1" max="3650" value="365"></label></div><div class="form-actions"><button class="button button--secondary" type="button" data-dialog-close>Cancel</button><button class="button button--accent" type="submit">Create customer and key</button></div></div></form></div></dialog>
 
 <dialog class="modal-dialog" id="commercial-settings"><div class="modal-dialog__surface"><div class="modal-dialog__header"><div><span class="superadmin-kicker">Billing identity</span><h2>Commercial invoice settings</h2></div><button class="icon-button" type="button" data-dialog-close><x-icon name="close" /></button></div><form method="post" action="{{ route('superadmin.cloud.settings.update') }}">@csrf @method('PUT')<div class="modal-dialog__body"><div class="form-grid"><label class="field field--full">Legal business name<input name="legal_name" value="{{ $commercialSettings->legal_name }}" required></label><label class="field">Tax/GST number<input name="tax_number" value="{{ $commercialSettings->tax_number }}"></label><label class="field">Currency<input name="currency" value="{{ $commercialSettings->currency }}" maxlength="8" required></label><label class="field">Invoice prefix<input name="invoice_prefix" value="{{ $commercialSettings->invoice_prefix }}" maxlength="20" required></label><label class="field field--full">Registered billing address<textarea name="billing_address">{{ $commercialSettings->billing_address }}</textarea></label></div><div class="form-actions"><button class="button button--secondary" type="button" data-dialog-close>Cancel</button><button class="button" type="submit">Save settings</button></div></div></form></div></dialog>
