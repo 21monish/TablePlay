@@ -8,9 +8,10 @@
     <AssemblyName>TablePlay.SetupHost</AssemblyName>
     <RootNamespace>TablePlay.Setup</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>2.5.6</Version>
+    <Version>2.5.7</Version>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\Shared\LocalPorts.cs" Link="LocalPorts.cs" />
     <InternalsVisibleTo Include="TablePlay.InstallerSmokeTests" />
   </ItemGroup>
 </Project>

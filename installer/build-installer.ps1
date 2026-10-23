@@ -6,7 +6,7 @@ param(
     [string] $LicensePublicKeyFile = '',
     [string] $RuntimeIdentifier = 'win-x64',
     [string] $RuntimeFrameworkVersion = '9.0.19',
-    [string] $Version = '2.5.6',
+    [string] $Version = '2.5.8',
     [switch] $NoRestore
 )
 
@@ -313,23 +313,23 @@ Copy-Item -LiteralPath (Join-Path $uninstallerPublish 'TablePlay.Uninstaller.exe
 
 $releaseDefinitions = @(
     [ordered]@{
-        app = 'staff'; platform = 'android'; version = '1.9.2'; build_number = 2014
-        source = 'dist\TablePlay-Staff-Android-arm64-v1.9.2-release.apk'; payload_file = 'staff-android.apk'
-        storage_file = 'tableplay-staff-android-1.9.2.apk'; original_filename = 'TablePlay-Staff-Android-arm64-v1.9.2-release.apk'
+        app = 'staff'; platform = 'android'; version = '1.11.1'; build_number = 2018
+        source = 'dist\TablePlay-Staff-Android-arm64-v1.11.1-release.apk'; payload_file = 'staff-android.apk'
+        storage_file = 'tableplay-staff-android-1.11.1.apk'; original_filename = 'TablePlay-Staff-Android-arm64-v1.11.1-release.apk'
         mime_type = 'application/vnd.android.package-archive'; package_identifier = 'com.tableplay.tableplay_staff'
         signing_certificate_sha256 = '4adba0c171bb6a0ec83246d28a2c37a911efe4ee9921d097d3825d7e9c061a0e'
     },
     [ordered]@{
-        app = 'customer'; platform = 'android'; version = '1.12.1'; build_number = 2015
-        source = 'dist\TablePlay-Customer-Android-v1.12.1-release.apk'; payload_file = 'customer-android.apk'
-        storage_file = 'tableplay-customer-android-1.12.1.apk'; original_filename = 'TablePlay-Customer-Android-v1.12.1-release.apk'
+        app = 'customer'; platform = 'android'; version = '1.13.1'; build_number = 2017
+        source = 'dist\TablePlay-Customer-Android-v1.13.1-release.apk'; payload_file = 'customer-android.apk'
+        storage_file = 'tableplay-customer-android-1.13.1.apk'; original_filename = 'TablePlay-Customer-Android-v1.13.1-release.apk'
         mime_type = 'application/vnd.android.package-archive'; package_identifier = 'com.tableplay.tableplay_tablet'
         signing_certificate_sha256 = '4adba0c171bb6a0ec83246d28a2c37a911efe4ee9921d097d3825d7e9c061a0e'
     },
     [ordered]@{
-        app = 'staff'; platform = 'windows'; version = '1.9.2'; build_number = 14
-        source = 'dist\TablePlay-Staff-Windows-x64-v1.9.2.zip'; payload_file = 'staff-windows.zip'
-        storage_file = 'tableplay-staff-windows-1.9.2.zip'; original_filename = 'TablePlay-Staff-Windows-x64-v1.9.2.zip'
+        app = 'staff'; platform = 'windows'; version = '1.11.1'; build_number = 2018
+        source = 'dist\TablePlay-Staff-Windows-x64-v1.11.1.zip'; payload_file = 'staff-windows.zip'
+        storage_file = 'tableplay-staff-windows-1.11.1.zip'; original_filename = 'TablePlay-Staff-Windows-x64-v1.11.1.zip'
         mime_type = 'application/zip'; package_identifier = $null; signing_certificate_sha256 = $null
     }
 )

@@ -57,7 +57,7 @@ class PackageInspectorTest extends TestCase
 
     public function test_built_windows_release_passes_the_real_package_gate(): void
     {
-        $package = base_path('dist/TablePlay-Staff-Windows-x64-v1.9.2.zip');
+        $package = base_path('dist/TablePlay-Staff-Windows-x64-v1.10.0.zip');
         if (! is_file($package)) {
             $this->markTestSkipped('Build and package the Staff Windows release to run this check.');
         }
@@ -65,7 +65,7 @@ class PackageInspectorTest extends TestCase
         $result = app(PackageInspector::class)->inspect(
             new UploadedFile($package, 'staff-windows.zip', null, null, true),
             'staff-windows',
-            '1.9.2',
+            '1.10.0',
             null,
         );
 
@@ -76,10 +76,10 @@ class PackageInspectorTest extends TestCase
     {
         $packages = [
             'staff-android' => [
-                base_path('dist/TablePlay-Staff-Android-arm64-v1.9.2-release.apk'),
+                base_path('dist/TablePlay-Staff-Android-arm64-v1.10.0-release.apk'),
                 'com.tableplay.tableplay_staff',
-                '1.9.2',
-                2014,
+                '1.10.0',
+                2016,
             ],
             'customer-android' => [
                 base_path('dist/TablePlay-Customer-Android-v1.12.1-release.apk'),

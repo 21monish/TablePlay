@@ -10,6 +10,7 @@ internal sealed class NetworkDoctorForm : Form
     private readonly string _ip;
     private readonly int _serverPort;
     private readonly int _reverbPort;
+    private readonly int _databasePort;
     private readonly TextBox _result = new()
     {
         Dock = DockStyle.Fill,
@@ -27,11 +28,12 @@ internal sealed class NetworkDoctorForm : Form
         ForeColor = Color.FromArgb(71, 85, 105),
     };
 
-    public NetworkDoctorForm(string ip, int serverPort, int reverbPort)
+    public NetworkDoctorForm(string ip, int serverPort, int reverbPort, int databasePort = 3310)
     {
         _ip = ip;
         _serverPort = serverPort;
         _reverbPort = reverbPort;
+        _databasePort = databasePort;
         Text = "TablePlay Network Doctor";
         StartPosition = FormStartPosition.CenterParent;
         Size = new Size(820, 650);
@@ -83,7 +85,7 @@ internal sealed class NetworkDoctorForm : Form
             Dock = DockStyle.Bottom,
             Height = 66,
             Padding = new Padding(20, 8, 20, 8),
-            Text = "Database port 3310 remains localhost-only and is never opened. For a permanent restaurant installation, use a dedicated router and reserve this laptop's IPv4 address in DHCP.",
+            Text = $"Database port {_databasePort} remains localhost-only and is never opened. For a permanent restaurant installation, use a dedicated router and reserve this laptop's IPv4 address in DHCP.",
             ForeColor = Color.FromArgb(71, 85, 105),
             BackColor = Color.White,
         };
@@ -134,7 +136,7 @@ internal sealed class NetworkDoctorForm : Form
                 .AppendLine($"Reverb port {_reverbPort}: {Pass(realtimePort)}")
                 .AppendLine($"Laravel health:   {health}")
                 .AppendLine($"Branding API:     {branding}")
-                .AppendLine("Database 3310:    Localhost-only (protected)")
+                .AppendLine($"Database {_databasePort}:    Localhost-only (protected)")
                 .AppendLine()
                 .AppendLine(category.Equals("Public", StringComparison.OrdinalIgnoreCase)
                     ? "ACTION: Windows marks this network Public. Use Fix Local Network Access, then reconnect the apps."

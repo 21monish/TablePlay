@@ -48,7 +48,7 @@ return new class extends Migration
             $table->foreignId('commercial_plan_id')->constrained('commercial_plans')->restrictOnDelete();
             $table->string('license_reference')->unique();
             $table->enum('status', ['trial', 'active', 'grace', 'suspended', 'expired'])->default('trial');
-            $table->timestamp('starts_at');
+            $table->dateTime('starts_at');
             $table->timestamp('expires_at')->nullable();
             $table->timestamp('grace_ends_at')->nullable();
             $table->unsignedSmallInteger('max_installations')->default(1);

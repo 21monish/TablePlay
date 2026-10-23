@@ -68,7 +68,7 @@ internal sealed class ManagerForm : Form
         var openActions = ActionGroup("Open and download",
             ButtonWithHandler("Open Admin", () => { OpenUrl(AdminUrl); return Task.CompletedTask; }),
             ButtonWithHandler("App QR codes", () => { new DownloadsForm(CurrentIp, _config.ServerPort).ShowDialog(this); return Task.CompletedTask; }),
-            ButtonWithHandler("Network Doctor", () => { new NetworkDoctorForm(CurrentIp, _config.ServerPort, 8080).ShowDialog(this); return Task.CompletedTask; }),
+            ButtonWithHandler("Network Doctor", () => { new NetworkDoctorForm(CurrentIp, _config.ServerPort, _config.ReverbPort, _config.DatabasePort).ShowDialog(this); return Task.CompletedTask; }),
             ButtonWithHandler("View logs", () => { OpenFolder(Path.Combine(_root, "logs")); return Task.CompletedTask; }));
         content.Controls.Add(openActions, 1, 1);
 
@@ -461,6 +461,8 @@ internal sealed class ManagerForm : Form
     private sealed class InstallationConfig
     {
         public int ServerPort { get; set; } = 8000;
+        public int ReverbPort { get; set; } = 8080;
+        public int DatabasePort { get; set; } = 3310;
         public string ProductVersion { get; set; } = "2.0.0";
     }
 }

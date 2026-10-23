@@ -1,8 +1,11 @@
 <?php
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 class MenuItem extends Model
 {
+    use SoftDeletes;
+
     protected $guarded = [];
 
     protected $appends = ['image_url', 'effective_price'];

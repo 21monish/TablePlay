@@ -19,6 +19,8 @@ use App\Http\Controllers\Web\TrialRegistrationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', PortalController::class)->name('portal');
+Route::get('/contact', [\App\Http\Controllers\Web\ContactController::class, 'create'])->name('contact');
+Route::post('/contact', [\App\Http\Controllers\Web\ContactController::class, 'store'])->middleware('throttle:3,10,website-contact')->name('contact.store');
 Route::view('/privacy', 'legal.privacy')->name('privacy');
 Route::view('/terms', 'legal.terms')->name('terms');
 Route::get('/favicon.ico', [BrandAssetController::class, 'favicon'])->name('brand.favicon');
@@ -26,6 +28,10 @@ Route::get('/favicon.ico', [BrandAssetController::class, 'favicon'])->name('bran
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:20,1')->name('login.store');
+    Route::get('/forgot-password', [\App\Http\Controllers\Web\PasswordRecoveryController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [\App\Http\Controllers\Web\PasswordRecoveryController::class, 'send'])->middleware('throttle:5,10,password-recovery')->name('password.email');
+    Route::get('/reset-password/{token}', [\App\Http\Controllers\Web\PasswordRecoveryController::class, 'edit'])->name('password.reset');
+    Route::post('/reset-password', [\App\Http\Controllers\Web\PasswordRecoveryController::class, 'update'])->middleware('throttle:10,10,password-reset')->name('password.update');
     Route::get('/trial/register', [TrialRegistrationController::class, 'create'])->name('trial.create');
     Route::post('/trial/register', [TrialRegistrationController::class, 'store'])->middleware('throttle:5,60')->name('trial.store');
 });
@@ -119,6 +125,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'privileged.verified
     Route::post('categories', [AdminController::class, 'storeCategory'])->name('categories.store');
     Route::post('menu-items', [AdminController::class, 'storeMenuItem'])->name('menu-items.store');
     Route::put('menu-items/{menuItem}', [AdminController::class, 'updateMenuItem'])->name('menu-items.update');
+    Route::delete('menu-items/{menuItem}', [AdminController::class, 'destroyMenuItem'])->name('menu-items.destroy');
     Route::post('menu-items/{menuItem}/toggle', [AdminController::class, 'toggleMenuItem'])->name('menu-items.toggle');
     Route::put('settings', [AdminController::class, 'updateSettings'])->name('settings.update');
     Route::post('games', [AdminController::class, 'storeGame'])->middleware('entitlement:games')->name('games.store');

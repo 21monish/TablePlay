@@ -6,6 +6,17 @@ import 'package:tableplay_staff/features/login_screen.dart';
 import 'package:tableplay_staff/theme/tableplay_theme.dart';
 
 void main() {
+  testWidgets('recovery uses the saved custom port and does not reveal credentials', (tester) async {
+    SharedPreferences.setMockInitialValues({'base_url': 'http://restaurant.test:18742/api/v1'});
+    final store = SessionStore(await SharedPreferences.getInstance());
+    await tester.pumpWidget(MaterialApp(theme: tablePlayTheme(), home: LoginScreen(store: store, onSignedIn: () {})));
+    await tester.ensureVisible(find.text('Forgot password?'));
+    await tester.tap(find.text('Forgot password?'));
+    await tester.pumpAndSettle();
+    expect(find.text('Recover your staff password'), findsOneWidget);
+    expect(find.text('http://restaurant.test:18742/forgot-password'), findsOneWidget);
+    expect(find.text('Copy recovery link'), findsOneWidget);
+  });
   testWidgets('staff login presents role-based sign in', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final store = SessionStore(await SharedPreferences.getInstance());
@@ -20,7 +31,8 @@ void main() {
       find.textContaining('Admin, Counter, Kitchen, and Waiter'),
       findsOneWidget,
     );
-    expect(find.byType(TextFormField), findsNWidgets(2));
+    expect(find.byType(TextFormField), findsNWidgets(3));
+    expect(find.text('Forgot password?'), findsOneWidget);
     expect(find.text('Open my dashboard'), findsOneWidget);
 
     final credentialField = find.byKey(const Key('staff-credential-field'));

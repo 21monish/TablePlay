@@ -16,7 +16,7 @@ return new class extends Migration {
             $table->id(); $table->foreignId('commercial_plan_id')->constrained()->restrictOnDelete();
             $table->uuid('installation_uuid')->unique(); $table->string('license_reference')->unique();
             $table->enum('status', ['trial','active','grace','suspended','expired'])->default('trial');
-            $table->timestamp('starts_at'); $table->timestamp('expires_at')->nullable(); $table->timestamp('grace_ends_at')->nullable();
+            $table->dateTime('starts_at'); $table->timestamp('expires_at')->nullable(); $table->timestamp('grace_ends_at')->nullable();
             $table->json('entitlement_snapshot'); $table->text('signed_payload'); $table->string('signature', 128);
             $table->timestamp('last_verified_at')->nullable(); $table->timestamps();
         });

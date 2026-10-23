@@ -6,24 +6,44 @@
   <meta name="description" content="TablePlay connects table ordering, kitchen flow, waiter requests, billing, and guest entertainment on one secure restaurant platform.">
   <meta name="theme-color" content="#103d35">
   <title>TablePlay &mdash; Restaurant service, connected</title>
+  <link rel="canonical" href="https://tableplay-vercel-site.vercel.app/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="TablePlay - Restaurant service, connected">
+  <meta property="og:description" content="Ordering, kitchen workflow, staff operations and table entertainment. Start a 14-day restaurant trial.">
+  <meta property="og:url" content="https://tableplay-vercel-site.vercel.app/">
+  <meta property="og:image" content="https://tableplay-vercel-site.vercel.app/social-card.png">
+  <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="TablePlay: Restaurant service, connected. One calm system for every busy table.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="website-canonical" content="https://tableplay-vercel-site.vercel.app/">
+  <meta name="website-whatsapp" content="919313623141">
+  <meta name="website-analytics" content="">
+  <link rel="stylesheet" href="/website.css">
+  <script src="/website.js" defer></script>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/site.css">
   <link rel="stylesheet" href="/mobile.css">
 </head>
 <body>
+  <a class="site-skip" href="#top">Skip to content</a>
+  <div class="site-scroll" data-scroll-progress aria-hidden="true"></div>
   <header class="nav">
     <a class="brand" href="#top" aria-label="TablePlay home"><span aria-hidden="true">TP</span><strong>Table<span>Play</span></strong></a>
-    <nav aria-label="Main navigation">
+    <button class="site-menu-toggle" type="button" data-site-menu aria-controls="main-navigation" aria-expanded="false">Menu</button>
+    <nav id="main-navigation" aria-label="Main navigation">
       <a href="#platform">Platform</a>
       <a href="#workflow">Workflow</a>
       <a href="#trial">Free trial</a>
       <a href="#apps">Apps</a>
+      <a href="#contact">Contact</a>
       <a href="https://tableplay-api.onrender.com/login">Sign in</a>
       <a class="nav-cta" href="https://tableplay-api.onrender.com/trial/register">Start free trial</a>
     </nav>
   </header>
 
-  <main id="top">
+  <main id="top" tabindex="-1">
+    <div class="site-search" role="search"><label for="site-search">Search this page</label><input id="site-search" type="search" data-site-search placeholder="Try trial, tablets or billing" maxlength="100" aria-controls="site-search-results" autocomplete="off"><div class="site-search-results" id="site-search-results" data-search-results role="region" aria-label="Search results" aria-live="polite" hidden></div></div>
+    <div class="site-tools" style="justify-content:center;padding:0 16px"><button type="button" data-theme-toggle aria-pressed="false">Dark mode</button><button type="button" data-copy-site>Copy website link</button><button type="button" data-site-print>Print page</button></div>
     <section class="hero">
       <div class="hero-copy">
         <p class="eyebrow">Restaurant service, connected</p>
@@ -83,11 +103,16 @@
       <div class="app-grid"><article><span class="app-icon">S</span><div><h3>TablePlay Staff</h3><p>Role-aware operations for Admin, Counter, Kitchen, and Waiter on Windows and Android.</p><a href="https://tableplay-api.onrender.com/login">Open staff portal</a></div></article><article><span class="app-icon orange">T</span><div><h3>TablePlay Customer</h3><p>A paired Android table app for visual menus, orders, live status, service requests, and games.</p><a href="https://tableplay-api.onrender.com/trial/register">Start with the free trial</a></div></article></div>
     </section>
 
-    <section class="section faq"><div><p class="eyebrow">Before you start</p><h2>Questions restaurant owners ask.</h2></div><div class="faq-list"><details><summary>Will the restaurant stop if the internet goes down?</summary><p>Core ordering and staff workflows run on your private restaurant network. Internet is required for initial activation and periodic cloud licence checks.</p></details><details><summary>Can I keep my setup after the trial?</summary><p>Yes. Your restaurant profile, staff, tables, menu, and order history are preserved when your plan changes.</p></details><details><summary>How are tablets connected?</summary><p>An administrator creates a secure, single-use QR code for a specific table. The tablet and server must be on the same private Wi-Fi or LAN.</p></details><details><summary>Do all staff use the same account?</summary><p>No. Each person receives an appropriate role or PIN so permissions and activity stay traceable.</p></details></div></section>
+    <section class="section faq" id="faq"><div><p class="eyebrow">Before you start</p><h2>Questions restaurant owners ask.</h2></div><div class="faq-list"><details><summary>Will the restaurant stop if the internet goes down?</summary><p>Core ordering and staff workflows run on your private restaurant network. Internet is required for initial activation and periodic cloud licence checks.</p></details><details><summary>Can I keep my setup after the trial?</summary><p>Yes. Your restaurant profile, staff, tables, menu, and order history are preserved when your plan changes.</p></details><details><summary>How are tablets connected?</summary><p>An administrator creates a secure, single-use QR code for a specific table. The tablet and server must be on the same private Wi-Fi or LAN.</p></details><details><summary>Do all staff use the same account?</summary><p>No. Each person receives an appropriate role or PIN so permissions and activity stay traceable.</p></details></div></section>
 
     <section class="cta"><div><p class="eyebrow">Ready for a calmer service flow?</p><h2>Start with one real order.</h2><p>Set up your restaurant and test TablePlay for 14 days.</p></div><a class="button primary" href="https://tableplay-api.onrender.com/trial/register">Start free trial</a></section>
+    <section id="contact" class="section"><p class="eyebrow">Here to help</p><h2>Let's talk about your restaurant.</h2><p>Need help with your trial, installation or staff apps?</p><div class="site-tools"><a class="button primary" href="https://tableplay-api.onrender.com/contact">Send an enquiry</a><a class="button secondary" href="mailto:monishkanojiya5@gmail.com">Email TablePlay</a><a class="button secondary" href="#" data-whatsapp hidden target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a></div><p>Last updated: <time datetime="2026-10-18">18 October 2026</time></p></section>
   </main>
 
   <footer><a class="brand" href="#top"><span aria-hidden="true">TP</span><strong>Table<span>Play</span></strong></a><p>Restaurant operations and table entertainment, together.<br><a href="https://tableplay-api.onrender.com/privacy">Privacy</a> &middot; <a href="https://tableplay-api.onrender.com/terms">Terms</a></p><p>&copy; 2026 TablePlay</p></footer>
+  <aside class="site-cookie" data-cookie-banner aria-label="Cookie preferences" hidden><p>Essential storage keeps your preferences working. Optional analytics helps us understand visits and campaign links, only if you accept. <a href="https://tableplay-api.onrender.com/privacy">Privacy details</a></p><div class="site-cookie-actions"><button type="button" data-consent="rejected">Essential only</button><button type="button" data-consent="accepted">Accept analytics</button></div></aside>
+  <div class="site-tools" style="justify-content:center"><button type="button" data-cookie-settings>Cookie settings</button></div>
+  <div class="site-float"><a href="#top" data-back-top hidden>Back to top</a><a href="#" data-whatsapp hidden target="_blank" rel="noopener noreferrer">WhatsApp</a><a href="#contact">Contact us</a></div>
+  <span class="site-status" data-site-status role="status" aria-live="polite"></span>
 </body>
 </html>

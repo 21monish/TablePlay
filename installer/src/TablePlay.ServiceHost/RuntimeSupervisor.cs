@@ -30,6 +30,7 @@ internal sealed class RuntimeSupervisor
         try
         {
             Log("runtime", $"Starting TablePlay from {_root}.");
+            TablePlay.Runtime.LocalPorts.RequireAvailable((_config.ServerPort, "HTTP"), (_config.ReverbPort, "realtime"), (_config.DatabasePort, "private database"));
             StartDatabase();
             await WaitForManagedPortAsync("database", _config.DatabasePort, TimeSpan.FromSeconds(60), cancellationToken);
             StartApplicationProcesses();
@@ -73,6 +74,7 @@ internal sealed class RuntimeSupervisor
 
     private void StartDatabase()
     {
+        TablePlay.Runtime.LocalPorts.RequireAvailable((_config.DatabasePort, "private database"));
         var executable = Path.Combine(_root, "database", "bin", "mysqld.exe");
         var defaultsFile = Path.Combine(_root, "database", "my.ini");
         StartChild("database", executable, ["--defaults-file=" + defaultsFile, "--console"], Path.Combine(_root, "database"));
@@ -80,6 +82,7 @@ internal sealed class RuntimeSupervisor
 
     private void StartApplicationProcesses()
     {
+        TablePlay.Runtime.LocalPorts.RequireAvailable((_config.ServerPort, "HTTP"), (_config.ReverbPort, "realtime"));
         var php = Path.Combine(_root, "php", "php.exe");
         var server = Path.Combine(_root, "server");
 
@@ -119,6 +122,8 @@ internal sealed class RuntimeSupervisor
 
     private void StartChild(string name, string executable, IReadOnlyList<string> arguments, string workingDirectory)
     {
+        if (name == "laravel") TablePlay.Runtime.LocalPorts.RequireAvailable((_config.ServerPort, "HTTP"));
+        if (name == "reverb") TablePlay.Runtime.LocalPorts.RequireAvailable((_config.ReverbPort, "realtime"));
         if (!File.Exists(executable))
         {
             throw new FileNotFoundException($"The {name} executable is missing.", executable);

@@ -1,7 +1,7 @@
 name: tableplay_tablet
 description: Offline-first TablePlay customer tablet client.
 publish_to: none
-version: 1.13.0+2016
+version: 1.13.1+2017
 environment:
   sdk: '>=3.3.0 <4.0.0'
 dependencies:

@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
+use App\Services\MenuItemDeletionService;
 use App\Models\{AuditLog,Category,Device,DevicePairing,DiningTable,Game,MenuItem,Order,Payment,RestaurantSetting,Role,ServiceRequest,TableSession,User};
 use App\Services\{AuditService,DevicePairingService,PublicAssetStorage,SystemHealthService};
 use Illuminate\Http\Request;
@@ -27,6 +28,7 @@ class AdminController extends Controller {
  }
  public function tables(){return view('admin.tables',['tables'=>DiningTable::with(['pairings'=>fn($q)=>$q->where('is_active',true)->with('device')])->withCount(['sessions','sessions as active_sessions_count'=>fn($q)=>$q->whereIn('status',['open','billing'])])->orderBy('table_code')->get(),'devices'=>Device::with(['pairings'=>fn($q)=>$q->where('is_active',true)->with('diningTable')])->latest()->get()]);}
  public function menu(){return view('admin.menu',['categories'=>Category::with(['menuItems'=>fn($q)=>$q->orderBy('name')])->orderBy('sort_order')->get()]);}
+ public function destroyMenuItem(Request $request,MenuItem $menuItem,MenuItemDeletionService $items){$result=$items->delete($request,$menuItem);return back()->with('status',$result['message']);}
  public function team(){$roles=['admin','counter','kitchen','waiter'];return view('admin.team',['roles'=>Role::whereIn('name',$roles)->orderBy('name')->get(),'users'=>User::with('role')->whereHas('role',fn($q)=>$q->whereIn('name',$roles))->orderBy('name')->get()]);}
  public function games(){return view('admin.games',['games'=>Game::orderBy('sort_order')->get()]);}
  public function reports(){return view('admin.reports',['sales'=>Order::whereNotIn('status',['cancelled','rejected'])->selectRaw('date(created_at) sale_date, count(*) orders_count, sum(total_amount) total')->groupBy('sale_date')->latest('sale_date')->limit(30)->get(),'audits'=>AuditLog::with('user')->latest()->limit(100)->get(),'summary'=>['revenue'=>Payment::sum('amount'),'payments'=>Payment::count(),'orders'=>Order::whereNotIn('status',['cancelled','rejected'])->count(),'average'=>Order::whereNotIn('status',['cancelled','rejected'])->avg('total_amount')??0]]);}

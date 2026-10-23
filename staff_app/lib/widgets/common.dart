@@ -480,6 +480,7 @@ class OperationalContextBar extends StatelessWidget {
     required this.refreshing,
     required this.onRefresh,
     this.lastUpdatedAt,
+    this.sessionRejected = false,
   });
 
   final String role;
@@ -489,6 +490,7 @@ class OperationalContextBar extends StatelessWidget {
   final bool refreshing;
   final VoidCallback onRefresh;
   final DateTime? lastUpdatedAt;
+  final bool sessionRejected;
 
   @override
   Widget build(BuildContext context) {
@@ -511,7 +513,11 @@ class OperationalContextBar extends StatelessWidget {
                 children: [
                   _ContextChip(
                     icon: online ? Icons.lan_rounded : Icons.cloud_off_rounded,
-                    label: online ? 'Server online' : 'Connection issue',
+                    label: sessionRejected
+                        ? 'Sign in required'
+                        : online
+                        ? 'Server online'
+                        : 'Connection issue',
                     color: online
                         ? TablePlayColors.success
                         : TablePlayColors.danger,

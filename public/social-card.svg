@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#103d35"/><stop offset="1" stop-color="#082a24"/></linearGradient></defs>
+<rect width="1200" height="630" fill="url(#bg)"/>
+<circle cx="1120" cy="40" r="300" fill="#235b49"/>
+<circle cx="1120" cy="40" r="230" fill="#2e6852"/>
+<rect x="70" y="65" width="62" height="62" rx="20" fill="#f56332"/>
+<text x="101" y="106" text-anchor="middle" fill="white" font-family="Arial,sans-serif" font-size="26" font-weight="700">TP</text>
+<text x="154" y="108" fill="white" font-family="Arial,sans-serif" font-size="40" font-weight="700">Table<tspan fill="#ff935f">Play</tspan></text>
+<text x="74" y="202" fill="#f5bd4f" font-family="Arial,sans-serif" font-size="20" font-weight="700" letter-spacing="4">RESTAURANT SERVICE, CONNECTED</text>
+<text x="70" y="298" fill="white" font-family="Arial,sans-serif" font-size="72" font-weight="700">One calm system for</text>
+<text x="70" y="383" fill="white" font-family="Arial,sans-serif" font-size="72" font-weight="700">every busy table.</text>
+<text x="74" y="447" fill="#c5dfd2" font-family="Arial,sans-serif" font-size="27">Ordering. Kitchen. Staff. Billing. Table games.</text>
+<rect x="74" y="497" width="306" height="64" rx="15" fill="#f56332"/>
+<text x="227" y="538" text-anchor="middle" fill="white" font-family="Arial,sans-serif" font-size="25" font-weight="700">Start a 14-day free trial</text>
+<text x="424" y="538" fill="#c5dfd2" font-family="Arial,sans-serif" font-size="24">No payment card required</text>
+</svg>

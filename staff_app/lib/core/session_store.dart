@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,7 +14,9 @@ class SessionStore {
   String get baseUrl {
     final stored = preferences.getString('base_url')?.trim();
     if (stored != null && stored.isNotEmpty) return stored;
-    return Platform.isWindows ? 'http://127.0.0.1:8000/api/v1' : '';
+    // A port is installation-specific. Never guess an address and send a
+    // credential to whichever application happens to be listening there.
+    return '';
   }
 
   String? get token => preferences.getString('staff_token');

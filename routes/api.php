@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AdminExperienceController;
 use App\Http\Controllers\Api\{AdminStaffController,AppUpdateController,AuthController,AutomationController,CloudLicenseController,CounterController,DeviceController,HelpController,KitchenController,TabletController,WaiterController};
 
 Route::prefix('cloud/v1')->middleware('throttle:30,1')->group(function () {
@@ -34,6 +35,14 @@ Route::prefix('v1')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout']); Route::get('auth/me', [AuthController::class, 'me']);
         Route::post('help/chat', [HelpController::class, 'chat'])->middleware('throttle:60,1');
         Route::prefix('admin')->middleware('role:admin')->group(function () {
+            Route::get('setup', [AdminExperienceController::class, 'setup']);
+            Route::post('setup/staff-connection', [AdminExperienceController::class, 'staffConnection'])->middleware('throttle:10,1,staff-connection');
+            Route::post('tables/{table}/pairing-qr', [AdminExperienceController::class, 'pairing'])->middleware('throttle:10,1,staff-pairing');
+            Route::get('license', [AdminExperienceController::class, 'license']);
+            Route::post('license/activate', [AdminExperienceController::class, 'activate'])->middleware('throttle:3,1,staff-license-activate');
+            Route::post('license/sync', [AdminExperienceController::class, 'sync'])->middleware('throttle:3,1,staff-license-sync');
+            Route::post('license/import', [AdminExperienceController::class, 'import'])->middleware('throttle:3,1,staff-license-import');
+            Route::post('license/offline-request', [AdminExperienceController::class, 'activationRequest'])->middleware('throttle:3,1,staff-license-request');
             Route::get('overview',[AdminStaffController::class,'overview']);
             Route::get('dashboard',[AdminStaffController::class,'dashboard']); Route::get('tables',[AdminStaffController::class,'tables']); Route::get('team',[AdminStaffController::class,'team']); Route::get('catalog',[AdminStaffController::class,'catalog']); Route::get('reports',[AdminStaffController::class,'reports'])->middleware('entitlement:advanced_reports'); Route::get('settings',[AdminStaffController::class,'settings']); Route::get('system',[AdminStaffController::class,'system']);
             Route::middleware('entitlement:automation')->group(function () { Route::get('automation',[AutomationController::class,'show']); Route::put('automation',[AutomationController::class,'update']); Route::post('automation/run',[AutomationController::class,'run']); });
@@ -41,6 +50,7 @@ Route::prefix('v1')->group(function () {
             Route::post('tables',[AdminStaffController::class,'storeTable']); Route::put('tables/{table}',[AdminStaffController::class,'updateTable']); Route::delete('tables/{table}',[AdminStaffController::class,'destroyTable']);
             Route::post('pairings',[AdminStaffController::class,'pairDevice']); Route::post('pairings/{pairing}/unpair',[AdminStaffController::class,'unpairDevice']);
             Route::post('staff',[AdminStaffController::class,'storeUser']); Route::post('staff/{user}/toggle',[AdminStaffController::class,'toggleUser']);
+            Route::delete('menu-items/{menuItem}', [AdminStaffController::class, 'destroyMenuItem']);
             Route::post('categories',[AdminStaffController::class,'storeCategory']); Route::post('menu-items',[AdminStaffController::class,'storeMenuItem']); Route::put('menu-items/{menuItem}',[AdminStaffController::class,'updateMenuItem']); Route::post('menu-items/{menuItem}/image',[AdminStaffController::class,'uploadMenuItemImage']); Route::post('menu-items/{menuItem}/toggle',[AdminStaffController::class,'toggleMenuItem']);
             Route::put('settings',[AdminStaffController::class,'updateSettings']); Route::post('settings/branding',[AdminStaffController::class,'updateBranding']); Route::post('games',[AdminStaffController::class,'storeGame'])->middleware('entitlement:games'); Route::post('games/{game}/toggle',[AdminStaffController::class,'toggleGame'])->middleware('entitlement:games');
         });

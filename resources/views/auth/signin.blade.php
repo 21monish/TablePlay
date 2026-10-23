@@ -12,6 +12,7 @@
         <span class="eyebrow">Secure staff access</span>
         <h2>Welcome back</h2>
         <p>Sign in with your staff password or assigned PIN.</p>
+        @if(session('status'))<div class="alert" role="status">{{ session('status') }}</div>@endif
         @if($errors->any())<div class="alert alert--danger" role="alert"><div>@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div></div>@endif
         <form method="post" action="{{ route('login.store') }}">@csrf
             <div class="stack">
@@ -21,6 +22,7 @@
                 <button class="button button--accent button--block" type="submit">Sign in securely <x-icon name="arrow" :size="16" /></button>
             </div>
         </form>
+        <p><a href="{{ route('password.request') }}">Forgot your password?</a></p>
         <div class="login-help"><x-icon name="health" :size="15" /><span>No internet connection is required on the restaurant network.</span></div>
     </div>
 </section>

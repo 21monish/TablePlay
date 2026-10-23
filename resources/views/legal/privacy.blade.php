@@ -33,6 +33,12 @@
 </section>
 
 <section class="legal-section">
+    <h2>Website preferences and optional analytics</h2>
+    <p>The website stores theme and consent preferences in your browser. Session and security storage supports signed-in features. Optional Google Analytics is loaded only after you accept analytics and only when configured. It measures visits and campaign parameters; we do not intentionally send enquiry text, passwords, licence keys or account details as analytics events. Use Cookie settings on the public page to change your choice.</p>
+    <p>Contact enquiries include the name, email and message you submit so support can respond. WhatsApp links open an external service governed by its own privacy policy. Do not include credentials or payment details in enquiries.</p>
+</section>
+
+<section class="legal-section">
     <h2>Retention, security, and deletion</h2>
     <p>Information is retained only while needed to provide the service, comply with legal obligations, resolve disputes, and protect the platform. Reasonable technical and organizational safeguards are used, but no internet service can guarantee absolute security.</p>
     <p>Account owners may request correction or deletion of their personal information by contacting the address below. Some records may be retained when legally required or needed for fraud prevention and system integrity.</p>

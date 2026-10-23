@@ -127,6 +127,32 @@ class OfflineLicenseSecurityTest extends TestCase
         $this->assertSame(0, $this->installation->fresh()->license_revision);
     }
 
+    public function test_utc_offline_dates_keep_their_signed_instants_in_india(): void
+    {
+        $originalTimezone = date_default_timezone_get();
+        config()->set('app.timezone', 'Asia/Kolkata');
+        date_default_timezone_set('Asia/Kolkata');
+        try {
+            $envelope = $this->signedEnvelope([
+                'issued_at' => '2030-01-01T12:00:00+00:00',
+                'starts_at' => '2029-12-31T12:00:00+00:00',
+                'expires_at' => '2031-01-01T12:00:00+00:00',
+                'subscription_expires_at' => '2031-01-01T12:00:00+00:00',
+                'offline_verification_due_at' => '2030-01-31T12:00:00+00:00',
+                'offline_refresh_due_at' => '2030-01-31T12:00:00+00:00',
+                'grace_ends_at' => '2031-01-08T12:00:00+00:00',
+            ]);
+            $subscription = $this->licenses->import(json_encode($envelope, JSON_THROW_ON_ERROR));
+            foreach (['starts_at','expires_at','subscription_expires_at','offline_verification_due_at','grace_ends_at'] as $field) {
+                $this->assertSame(\Illuminate\Support\Carbon::parse($envelope['payload'][$field])->timestamp, $subscription->$field->timestamp, $field);
+            }
+            $this->assertTrue(app(EntitlementService::class)->state()['licensed']);
+            $this->assertTrue(app(EntitlementService::class)->state()['signature_valid']);
+        } finally {
+            date_default_timezone_set($originalTimezone);
+        }
+    }
+
     public function test_clock_rollback_disables_signed_entitlements(): void
     {
         $this->licenses->import(json_encode($this->signedEnvelope(), JSON_THROW_ON_ERROR));

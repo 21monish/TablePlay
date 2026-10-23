@@ -7,6 +7,7 @@ import '../theme/tableplay_theme.dart';
 import '../widgets/tableplay_brand.dart';
 import 'game_center_v2.dart';
 import 'customer_menu.dart';
+import 'table_summary.dart';
 
 class CartLineV2 {
   CartLineV2(this.item, {this.quantity = 1});
@@ -77,6 +78,7 @@ class _HomeScreenV2State extends State<HomeScreenV2>
   Timer? polling;
   int tab = 0, guestCount = 2;
   bool loading = true, openingVisit = false;
+  bool _placingOrder = false;
   bool planAccessDenied = false;
   String? error;
   String? planAccessMessage;
@@ -246,6 +248,7 @@ class _HomeScreenV2State extends State<HomeScreenV2>
   }
 
   Future<void> showCart() async {
+    if (_placingOrder) return;
     final orderNote = TextEditingController();
     await showModalBottomSheet<void>(
       context: context,
@@ -283,7 +286,9 @@ class _HomeScreenV2State extends State<HomeScreenV2>
                           children: [
                             Text(
                               'Your cart',
-                              style: Theme.of(context).textTheme.headlineSmall
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
                                   ?.copyWith(fontWeight: FontWeight.w900),
                             ),
                             Text(
@@ -436,7 +441,8 @@ class _HomeScreenV2State extends State<HomeScreenV2>
   }
 
   Future<void> checkout(String note) async {
-    if (cart.isEmpty) return;
+    if (cart.isEmpty || _placingOrder) return;
+    setState(() => _placingOrder = true);
     try {
       await api.post('/orders', {
         'items': cart.values
@@ -471,6 +477,8 @@ class _HomeScreenV2State extends State<HomeScreenV2>
       }
     } catch (exception) {
       if (mounted) setState(() => error = exception.toString());
+    } finally {
+      if (mounted) setState(() => _placingOrder = false);
     }
   }
 
@@ -526,8 +534,7 @@ class _HomeScreenV2State extends State<HomeScreenV2>
   }
 
   Future<void> requestReset() async {
-    final confirmed =
-        await showDialog<bool>(
+    final confirmed = await showDialog<bool>(
           context: context,
           builder: (dialogContext) => AlertDialog(
             icon: const Icon(
@@ -598,9 +605,8 @@ class _HomeScreenV2State extends State<HomeScreenV2>
         final page = session == null ? startVisit() : pages[tab];
 
         return Scaffold(
-          drawer: wide
-              ? null
-              : Drawer(child: _navigationPanel(closeDrawer: true)),
+          drawer:
+              wide ? null : Drawer(child: _navigationPanel(closeDrawer: true)),
           appBar: AppBar(
             titleSpacing: wide ? 24 : 6,
             title: wide
@@ -669,6 +675,9 @@ class _HomeScreenV2State extends State<HomeScreenV2>
                           ),
                         ],
                       ),
+                    if (_placingOrder)
+                      const LinearProgressIndicator(
+                          semanticsLabel: 'Sending your order; please wait'),
                     if (session != null) _sessionStatusBar(wide: wide),
                     Expanded(
                       child: Center(
@@ -785,353 +794,356 @@ class _HomeScreenV2State extends State<HomeScreenV2>
     final hour = local.hour == 0
         ? 12
         : local.hour > 12
-        ? local.hour - 12
-        : local.hour;
+            ? local.hour - 12
+            : local.hour;
     final minute = local.minute.toString().padLeft(2, '0');
     final time = '$hour:$minute ${local.hour >= 12 ? 'PM' : 'AM'}';
     return error == null ? 'Synced $time' : 'Offline · last sync $time';
   }
 
   Widget _planAccessDeniedScreen() => Scaffold(
-    appBar: AppBar(
-      title: TablePlayBrand(
-        light: true,
-        compact: true,
-        logoUrl: '${branding['app_logo_url'] ?? ''}',
-        title: '${branding['restaurant_name'] ?? 'TablePlay'}',
-        tagline: '${branding['tagline'] ?? 'DINE · PLAY · DELIGHT'}',
-      ),
-    ),
-    body: Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(30),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 78,
-                    height: 78,
-                    decoration: BoxDecoration(
-                      color: TablePlayColors.gold.withValues(alpha: .18),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: const Icon(
-                      Icons.workspace_premium_rounded,
-                      color: TablePlayColors.accent,
-                      size: 40,
-                    ),
+        appBar: AppBar(
+          title: TablePlayBrand(
+            light: true,
+            compact: true,
+            logoUrl: '${branding['app_logo_url'] ?? ''}',
+            title: '${branding['restaurant_name'] ?? 'TablePlay'}',
+            tagline: '${branding['tagline'] ?? 'DINE · PLAY · DELIGHT'}',
+          ),
+        ),
+        body: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(30),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 78,
+                        height: 78,
+                        decoration: BoxDecoration(
+                          color: TablePlayColors.gold.withValues(alpha: .18),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: const Icon(
+                          Icons.workspace_premium_rounded,
+                          color: TablePlayColors.accent,
+                          size: 40,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Customer Table access is unavailable',
+                        textAlign: TextAlign.center,
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        planAccessMessage ??
+                            'Ask the restaurant administrator to check the active TablePlay plan.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: TablePlayColors.muted,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'This screen will unlock automatically after the licence or tablet limit is corrected.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: TablePlayColors.muted,
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      FilledButton.icon(
+                        onPressed: () async {
+                          setState(() => loading = true);
+                          await loadAll();
+                        },
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Check access again'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: requestReset,
+                        icon: const Icon(Icons.settings_outlined),
+                        label: const Text('Tablet pairing settings'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Customer Table access is unavailable',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    planAccessMessage ??
-                        'Ask the restaurant administrator to check the active TablePlay plan.',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: TablePlayColors.muted,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'This screen will unlock automatically after the licence or tablet limit is corrected.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: TablePlayColors.muted,
-                      fontSize: 11,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton.icon(
-                    onPressed: () async {
-                      setState(() => loading = true);
-                      await loadAll();
-                    },
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Check access again'),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: requestReset,
-                    icon: const Icon(Icons.settings_outlined),
-                    label: const Text('Tablet pairing settings'),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
         ),
-      ),
-    ),
-  );
+      );
 
   Widget _navigationPanel({bool closeDrawer = false}) => ColoredBox(
-    color: TablePlayColors.deep,
-    child: SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, 20, 20, 18),
-            child: TablePlayBrand(
-              light: true,
-              logoUrl: '${branding['app_logo_url'] ?? ''}',
-              title: '${branding['restaurant_name'] ?? 'TablePlay'}',
-              tagline: '${branding['tagline'] ?? 'DINE · PLAY · DELIGHT'}',
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.fromLTRB(14, 0, 14, 15),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: .08),
-              borderRadius: BorderRadius.circular(17),
-              border: Border.all(color: Colors.white.withValues(alpha: .08)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: TablePlayColors.accent,
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                  child: const Icon(
-                    Icons.table_restaurant_rounded,
-                    color: Colors.white,
-                  ),
+        color: TablePlayColors.deep,
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(20, 20, 20, 18),
+                child: TablePlayBrand(
+                  light: true,
+                  logoUrl: '${branding['app_logo_url'] ?? ''}',
+                  title: '${branding['restaurant_name'] ?? 'TablePlay'}',
+                  tagline: '${branding['tagline'] ?? 'DINE · PLAY · DELIGHT'}',
                 ),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.store.tableCode ?? 'Guest table',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      Text(
-                        session == null
-                            ? 'READY TO START A VISIT'
-                            : '${session?['guest_count'] ?? 0} GUESTS · VISIT ACTIVE',
-                        style: const TextStyle(
-                          color: Colors.white60,
-                          fontSize: 9,
-                          letterSpacing: .6,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
+              ),
+              Container(
+                margin: const EdgeInsets.fromLTRB(14, 0, 14, 15),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .08),
+                  borderRadius: BorderRadius.circular(17),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: .08)),
                 ),
-              ],
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 2, 20, 7),
-            child: Text(
-              'YOUR TABLE',
-              style: TextStyle(
-                color: Colors.white38,
-                fontSize: 9,
-                letterSpacing: 1.2,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              itemCount: destinations.length,
-              itemBuilder: (itemContext, index) {
-                final item = destinations[index];
-                final selected = tab == index;
-                final enabled = session != null;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: ListTile(
-                    enabled: enabled,
-                    selected: selected,
-                    selectedTileColor: Colors.white.withValues(alpha: .12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                    leading: Icon(
-                      selected ? item.selectedIcon : item.icon,
-                      color: !enabled
-                          ? Colors.white30
-                          : selected
-                          ? TablePlayColors.gold
-                          : Colors.white70,
-                    ),
-                    title: Text(
-                      item.label,
-                      style: TextStyle(
-                        color: enabled ? Colors.white : Colors.white38,
-                        fontWeight: selected
-                            ? FontWeight.w900
-                            : FontWeight.w700,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: TablePlayColors.accent,
+                        borderRadius: BorderRadius.circular(13),
                       ),
-                    ),
-                    subtitle: Text(
-                      item.subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: enabled ? Colors.white54 : Colors.white24,
-                        fontSize: 10,
-                      ),
-                    ),
-                    trailing: _destinationBadge(index),
-                    onTap: !enabled
-                        ? null
-                        : () {
-                            setState(() => tab = index);
-                            if (closeDrawer) {
-                              Navigator.pop(itemContext);
-                            }
-                          },
-                  ),
-                );
-              },
-            ),
-          ),
-          if (cart.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-              padding: const EdgeInsets.all(13),
-              decoration: BoxDecoration(
-                color: TablePlayColors.accent,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.shopping_bag_rounded,
+                      child: const Icon(
+                        Icons.table_restaurant_rounded,
                         color: Colors.white,
-                        size: 20,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '$cartCount item cart',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
+                    ),
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.store.tableCode ?? 'Guest table',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          Text(
+                            session == null
+                                ? 'READY TO START A VISIT'
+                                : '${session?['guest_count'] ?? 0} GUESTS · VISIT ACTIVE',
+                            style: const TextStyle(
+                              color: Colors.white60,
+                              fontSize: 9,
+                              letterSpacing: .6,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 2, 20, 7),
+                child: Text(
+                  'YOUR TABLE',
+                  style: TextStyle(
+                    color: Colors.white38,
+                    fontSize: 9,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  itemCount: destinations.length,
+                  itemBuilder: (itemContext, index) {
+                    final item = destinations[index];
+                    final selected = tab == index;
+                    final enabled = session != null;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: ListTile(
+                        enabled: enabled,
+                        selected: selected,
+                        selectedTileColor: Colors.white.withValues(alpha: .12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        leading: Icon(
+                          selected ? item.selectedIcon : item.icon,
+                          color: !enabled
+                              ? Colors.white30
+                              : selected
+                                  ? TablePlayColors.gold
+                                  : Colors.white70,
+                        ),
+                        title: Text(
+                          item.label,
+                          style: TextStyle(
+                            color: enabled ? Colors.white : Colors.white38,
+                            fontWeight:
+                                selected ? FontWeight.w900 : FontWeight.w700,
                           ),
                         ),
-                      ),
-                      Text(
-                        '₹${cartTotal.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
+                        subtitle: Text(
+                          item.subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: enabled ? Colors.white54 : Colors.white24,
+                            fontSize: 10,
+                          ),
                         ),
+                        trailing: _destinationBadge(index),
+                        onTap: !enabled
+                            ? null
+                            : () {
+                                setState(() => tab = index);
+                                if (closeDrawer) {
+                                  Navigator.pop(itemContext);
+                                }
+                              },
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 7),
-                  FilledButton(
-                    onPressed: showCart,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: TablePlayColors.deep,
-                      minimumSize: const Size(0, 40),
-                    ),
-                    child: const Text('Review order'),
-                  ),
-                ],
+                    );
+                  },
+                ),
               ),
-            ),
-          Container(
-            margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: .12),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  error == null ? Icons.wifi_rounded : Icons.wifi_off_rounded,
-                  color: error == null
-                      ? TablePlayColors.gold
-                      : Colors.redAccent,
-                  size: 19,
-                ),
-                const SizedBox(width: 9),
-                Expanded(
+              if (cart.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                  padding: const EdgeInsets.all(13),
+                  decoration: BoxDecoration(
+                    color: TablePlayColors.accent,
+                    borderRadius: BorderRadius.circular(15),
+                  ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        error == null
-                            ? 'Restaurant network online'
-                            : 'Connection issue',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                        ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.shopping_bag_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '$cartCount item cart',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '₹${cartTotal.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        Uri.tryParse(widget.store.baseUrl)?.host ??
-                            widget.store.baseUrl,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white54,
-                          fontSize: 9,
+                      const SizedBox(height: 7),
+                      FilledButton(
+                        onPressed: showCart,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: TablePlayColors.deep,
+                          minimumSize: const Size(0, 40),
                         ),
+                        child: const Text('Review order'),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
+              Container(
+                margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      error == null
+                          ? Icons.wifi_rounded
+                          : Icons.wifi_off_rounded,
+                      color: error == null
+                          ? TablePlayColors.gold
+                          : Colors.redAccent,
+                      size: 19,
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            error == null
+                                ? 'Restaurant network online'
+                                : 'Connection issue',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Text(
+                            Uri.tryParse(widget.store.baseUrl)?.host ??
+                                widget.store.baseUrl,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 9,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 0, 10, 2),
+                child: TextButton.icon(
+                  onPressed: () => LocalUpdateGate.check(context),
+                  icon: const Icon(Icons.system_update_rounded),
+                  label: const Text('Check for app updates'),
+                  style: TextButton.styleFrom(foregroundColor: Colors.white70),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+                child: TextButton.icon(
+                  onPressed: requestReset,
+                  icon: const Icon(Icons.settings_outlined),
+                  label: const Text('Tablet pairing settings'),
+                  style: TextButton.styleFrom(foregroundColor: Colors.white70),
+                ),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 0, 10, 2),
-            child: TextButton.icon(
-              onPressed: () => LocalUpdateGate.check(context),
-              icon: const Icon(Icons.system_update_rounded),
-              label: const Text('Check for app updates'),
-              style: TextButton.styleFrom(foregroundColor: Colors.white70),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
-            child: TextButton.icon(
-              onPressed: requestReset,
-              icon: const Icon(Icons.settings_outlined),
-              label: const Text('Tablet pairing settings'),
-              style: TextButton.styleFrom(foregroundColor: Colors.white70),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 
   Widget? _destinationBadge(int index) {
     if (index == 0 && cart.isNotEmpty) {
@@ -1153,590 +1165,601 @@ class _HomeScreenV2State extends State<HomeScreenV2>
   }
 
   Widget startVisit() => Container(
-    width: double.infinity,
-    decoration: const BoxDecoration(
-      gradient: LinearGradient(
-        colors: [Color(0xffeef4f0), TablePlayColors.canvas],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ),
-    ),
-    child: Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 540),
-          child: Container(
-            padding: const EdgeInsets.all(30),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: TablePlayColors.deep.withValues(alpha: .08),
-                  blurRadius: 28,
-                  offset: const Offset(0, 12),
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xffeef4f0), TablePlayColors.canvas],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 540),
+              child: Container(
+                padding: const EdgeInsets.all(30),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: TablePlayColors.deep.withValues(alpha: .08),
+                      blurRadius: 28,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: TablePlayColors.accent.withValues(alpha: .12),
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: const Icon(
-                    Icons.waving_hand_rounded,
-                    size: 37,
-                    color: TablePlayColors.accent,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Welcome to ${widget.store.tableCode}',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -.8,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Tell us your party size to start browsing the menu.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: TablePlayColors.muted),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: TablePlayColors.canvas,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        onPressed: guestCount > 1
-                            ? () => setState(() => guestCount--)
-                            : null,
-                        icon: const Icon(Icons.remove_circle_outline),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: TablePlayColors.accent.withValues(alpha: .12),
+                        borderRadius: BorderRadius.circular(22),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 18),
-                        child: Column(
-                          children: [
-                            Text(
-                              '$guestCount',
-                              style: const TextStyle(
-                                fontSize: 27,
+                      child: const Icon(
+                        Icons.waving_hand_rounded,
+                        size: 37,
+                        color: TablePlayColors.accent,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Welcome to ${widget.store.tableCode}',
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.w900,
+                                letterSpacing: -.8,
                               ),
-                            ),
-                            const Text(
-                              'GUESTS',
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: TablePlayColors.muted,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ],
-                        ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Tell us your party size to start browsing the menu.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: TablePlayColors.muted),
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: TablePlayColors.canvas,
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      IconButton(
-                        onPressed: guestCount < 20
-                            ? () => setState(() => guestCount++)
-                            : null,
-                        icon: const Icon(Icons.add_circle_outline),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            onPressed: guestCount > 1
+                                ? () => setState(() => guestCount--)
+                                : null,
+                            icon: const Icon(Icons.remove_circle_outline),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 18),
+                            child: Column(
+                              children: [
+                                Text(
+                                  '$guestCount',
+                                  style: const TextStyle(
+                                    fontSize: 27,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                const Text(
+                                  'GUESTS',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    color: TablePlayColors.muted,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: guestCount < 20
+                                ? () => setState(() => guestCount++)
+                                : null,
+                            icon: const Icon(Icons.add_circle_outline),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: openingVisit ? null : openVisit,
+                      icon: openingVisit
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.arrow_forward_rounded),
+                      label: Text(
+                        openingVisit
+                            ? 'Opening your table…'
+                            : 'Start table visit',
+                      ),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(52),
+                        backgroundColor: TablePlayColors.accent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+  Widget menuPage() => CustomerMenuView(
+        categories: categories,
+        cartCount: cartCount,
+        cartTotal: cartTotal,
+        onOpenCart: showCart,
+        onAdd: (item, instruction) => add(item, instruction),
+      );
+
+  Widget legacyMenuPage() => Column(
+        children: [
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 15),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'What would you like?',
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -.5,
+                                ),
+                      ),
+                      const SizedBox(height: 3),
+                      const Text(
+                        'Freshly prepared for your table',
+                        style: TextStyle(
+                          color: TablePlayColors.muted,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: openingVisit ? null : openVisit,
-                  icon: openingVisit
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
+                if (cart.isNotEmpty)
+                  FilledButton.icon(
+                    onPressed: showCart,
+                    icon: const Icon(Icons.shopping_bag_outlined, size: 19),
+                    label:
+                        Text('$cartCount · ₹${cartTotal.toStringAsFixed(0)}'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: TablePlayColors.accent,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 95),
+              itemCount: categories.length,
+              itemBuilder: (context, index) {
+                final category = Map<String, dynamic>.from(categories[index]);
+                final items = category['menu_items'] as List;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(3, 12, 3, 10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  category['name'],
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                if (category['description'] != null)
+                                  Text(
+                                    category['description'],
+                                    style: const TextStyle(
+                                      color: TablePlayColors.muted,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
-                        )
-                      : const Icon(Icons.arrow_forward_rounded),
+                          Text(
+                            '${items.length} ITEMS',
+                            style: const TextStyle(
+                              color: TablePlayColors.muted,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ...items.map((raw) {
+                      final item = Map<String, dynamic>.from(raw);
+                      final veg = item['food_type'] == 'veg';
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(15),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(17),
+                          border: Border.all(color: TablePlayColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: (veg
+                                        ? TablePlayColors.success
+                                        : TablePlayColors.accent)
+                                    .withValues(alpha: .1),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Icon(
+                                veg
+                                    ? Icons.eco_outlined
+                                    : Icons.restaurant_rounded,
+                                color: veg
+                                    ? TablePlayColors.success
+                                    : TablePlayColors.accent,
+                              ),
+                            ),
+                            const SizedBox(width: 13),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 9,
+                                        height: 9,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: veg
+                                                ? TablePlayColors.success
+                                                : TablePlayColors.accent,
+                                            width: 2,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          item['name'],
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    item['description'] ??
+                                        item['food_type'].toString().replaceAll(
+                                              '_',
+                                              ' ',
+                                            ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: TablePlayColors.muted,
+                                      fontSize: 11,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                  if (item['preparation_minutes'] != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 5),
+                                      child: Text(
+                                        '${item['preparation_minutes']} min preparation',
+                                        style: const TextStyle(
+                                          color: TablePlayColors.muted,
+                                          fontSize: 9.5,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  '₹${item['price']}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(height: 7),
+                                FilledButton(
+                                  onPressed: () => add(item),
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size(76, 36),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 13,
+                                      vertical: 8,
+                                    ),
+                                    backgroundColor: TablePlayColors.accent,
+                                  ),
+                                  child: const Text('Add'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                );
+              },
+            ),
+          ),
+          if (cart.isNotEmpty)
+            SafeArea(
+              top: false,
+              child: Container(
+                color: Colors.white,
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+                child: FilledButton.icon(
+                  onPressed: showCart,
+                  icon: const Icon(Icons.shopping_cart_checkout_rounded),
                   label: Text(
-                    openingVisit ? 'Opening your table…' : 'Start table visit',
+                    'Review $cartCount item${cartCount == 1 ? '' : 's'} · ₹${cartTotal.toStringAsFixed(2)}',
                   ),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                     backgroundColor: TablePlayColors.accent,
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
-    ),
-  );
+        ],
+      );
 
-  Widget menuPage() => CustomerMenuView(
-    categories: categories,
-    cartCount: cartCount,
-    cartTotal: cartTotal,
-    onOpenCart: showCart,
-    onAdd: (item, instruction) => add(item, instruction),
-  );
-
-  Widget legacyMenuPage() => Column(
-    children: [
-      Container(
-        color: Colors.white,
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 15),
-        child: Row(
+  Widget ordersPage() => RefreshIndicator(
+        onRefresh: refreshState,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'What would you like?',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -.5,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  const Text(
-                    'Freshly prepared for your table',
-                    style: TextStyle(
-                      color: TablePlayColors.muted,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
+            Text(
+              'Your orders',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
             ),
-            if (cart.isNotEmpty)
-              FilledButton.icon(
-                onPressed: showCart,
-                icon: const Icon(Icons.shopping_bag_outlined, size: 19),
-                label: Text('$cartCount · ₹${cartTotal.toStringAsFixed(0)}'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: TablePlayColors.accent,
-                ),
+            const SizedBox(height: 4),
+            const Text(
+              'Pull down to refresh kitchen progress',
+              style: TextStyle(color: TablePlayColors.muted, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            if (orders.isEmpty)
+              _emptyPanel(
+                Icons.receipt_long_outlined,
+                'No orders yet',
+                'Items you submit will appear here with live progress.',
               ),
-          ],
-        ),
-      ),
-      Expanded(
-        child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 95),
-          itemCount: categories.length,
-          itemBuilder: (context, index) {
-            final category = Map<String, dynamic>.from(categories[index]);
-            final items = category['menu_items'] as List;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(3, 12, 3, 10),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
+            ...orders.map((raw) {
+              final order = Map<String, dynamic>.from(raw);
+              final status = order['status'].toString();
+              final steps = [
+                'pending',
+                'confirmed',
+                'preparing',
+                'ready',
+                'served',
+              ];
+              final current = steps.indexOf(status);
+              return Container(
+                margin: const EdgeInsets.only(bottom: 13),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: TablePlayColors.border),
+                ),
+                child: ExpansionTile(
+                  shape: const Border(),
+                  collapsedShape: const Border(),
+                  tilePadding: const EdgeInsets.symmetric(
+                    horizontal: 17,
+                    vertical: 5,
+                  ),
+                  childrenPadding: const EdgeInsets.fromLTRB(17, 0, 17, 15),
+                  leading: Container(
+                    width: 43,
+                    height: 43,
+                    decoration: BoxDecoration(
+                      color: _statusColor(status).withValues(alpha: .12),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child:
+                        Icon(_statusIcon(status), color: _statusColor(status)),
+                  ),
+                  title: Text(
+                    order['order_number'],
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  subtitle: Text(
+                    status.toUpperCase(),
+                    style: TextStyle(
+                      color: _statusColor(status),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .6,
+                    ),
+                  ),
+                  children: [
+                    Row(
+                      children: List.generate(
+                        steps.length,
+                        (index) => Expanded(
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: index <= current
+                                        ? _statusColor(status)
+                                        : TablePlayColors.border,
+                                    borderRadius: BorderRadius.circular(99),
+                                  ),
+                                ),
+                              ),
+                              if (index < steps.length - 1)
+                                const SizedBox(width: 3),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    ...(order['items'] as List).map<Widget>(
+                      (item) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 5),
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              category['name'],
+                              '${item['quantity']}×',
                               style: const TextStyle(
-                                fontSize: 18,
+                                color: TablePlayColors.accent,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            if (category['description'] != null)
-                              Text(
-                                category['description'],
-                                style: const TextStyle(
-                                  color: TablePlayColors.muted,
-                                  fontSize: 11,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        '${items.length} ITEMS',
-                        style: const TextStyle(
-                          color: TablePlayColors.muted,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                ...items.map((raw) {
-                  final item = Map<String, dynamic>.from(raw);
-                  final veg = item['food_type'] == 'veg';
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(17),
-                      border: Border.all(color: TablePlayColors.border),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color:
-                                (veg
-                                        ? TablePlayColors.success
-                                        : TablePlayColors.accent)
-                                    .withValues(alpha: .1),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Icon(
-                            veg ? Icons.eco_outlined : Icons.restaurant_rounded,
-                            color: veg
-                                ? TablePlayColors.success
-                                : TablePlayColors.accent,
-                          ),
-                        ),
-                        const SizedBox(width: 13),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                            const SizedBox(width: 9),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Container(
-                                    width: 9,
-                                    height: 9,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: veg
-                                            ? TablePlayColors.success
-                                            : TablePlayColors.accent,
-                                        width: 2,
-                                      ),
+                                  Text(
+                                    item['item_name_snapshot'],
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      item['name'],
+                                  if (item['special_instruction'] != null)
+                                    Text(
+                                      item['special_instruction'],
                                       style: const TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 14,
+                                        color: TablePlayColors.muted,
+                                        fontSize: 10,
                                       ),
                                     ),
-                                  ),
                                 ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                item['description'] ??
-                                    item['food_type'].toString().replaceAll(
-                                      '_',
-                                      ' ',
-                                    ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: TablePlayColors.muted,
-                                  fontSize: 11,
-                                  height: 1.35,
-                                ),
-                              ),
-                              if (item['preparation_minutes'] != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 5),
-                                  child: Text(
-                                    '${item['preparation_minutes']} min preparation',
-                                    style: const TextStyle(
-                                      color: TablePlayColors.muted,
-                                      fontSize: 9.5,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '₹${item['price']}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 15,
-                              ),
-                            ),
-                            const SizedBox(height: 7),
-                            FilledButton(
-                              onPressed: () => add(item),
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size(76, 36),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 13,
-                                  vertical: 8,
-                                ),
-                                backgroundColor: TablePlayColors.accent,
-                              ),
-                              child: const Text('Add'),
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  );
-                }),
-              ],
-            );
-          },
-        ),
-      ),
-      if (cart.isNotEmpty)
-        SafeArea(
-          top: false,
-          child: Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-            child: FilledButton.icon(
-              onPressed: showCart,
-              icon: const Icon(Icons.shopping_cart_checkout_rounded),
-              label: Text(
-                'Review $cartCount item${cartCount == 1 ? '' : 's'} · ₹${cartTotal.toStringAsFixed(2)}',
-              ),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
-                backgroundColor: TablePlayColors.accent,
-              ),
-            ),
-          ),
-        ),
-    ],
-  );
-
-  Widget ordersPage() => RefreshIndicator(
-    onRefresh: refreshState,
-    child: ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(
-          'Your orders',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Pull down to refresh kitchen progress',
-          style: TextStyle(color: TablePlayColors.muted, fontSize: 12),
-        ),
-        const SizedBox(height: 16),
-        if (orders.isEmpty)
-          _emptyPanel(
-            Icons.receipt_long_outlined,
-            'No orders yet',
-            'Items you submit will appear here with live progress.',
-          ),
-        ...orders.map((raw) {
-          final order = Map<String, dynamic>.from(raw);
-          final status = order['status'].toString();
-          final steps = [
-            'pending',
-            'confirmed',
-            'preparing',
-            'ready',
-            'served',
-          ];
-          final current = steps.indexOf(status);
-          return Container(
-            margin: const EdgeInsets.only(bottom: 13),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: TablePlayColors.border),
-            ),
-            child: ExpansionTile(
-              shape: const Border(),
-              collapsedShape: const Border(),
-              tilePadding: const EdgeInsets.symmetric(
-                horizontal: 17,
-                vertical: 5,
-              ),
-              childrenPadding: const EdgeInsets.fromLTRB(17, 0, 17, 15),
-              leading: Container(
-                width: 43,
-                height: 43,
-                decoration: BoxDecoration(
-                  color: _statusColor(status).withValues(alpha: .12),
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: Icon(_statusIcon(status), color: _statusColor(status)),
-              ),
-              title: Text(
-                order['order_number'],
-                style: const TextStyle(fontWeight: FontWeight.w900),
-              ),
-              subtitle: Text(
-                status.toUpperCase(),
-                style: TextStyle(
-                  color: _statusColor(status),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: .6,
-                ),
-              ),
-              children: [
-                Row(
-                  children: List.generate(
-                    steps.length,
-                    (index) => Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: index <= current
-                                    ? _statusColor(status)
-                                    : TablePlayColors.border,
-                                borderRadius: BorderRadius.circular(99),
-                              ),
-                            ),
-                          ),
-                          if (index < steps.length - 1)
-                            const SizedBox(width: 3),
-                        ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 15),
-                ...(order['items'] as List).map<Widget>(
-                  (item) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 5),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${item['quantity']}×',
-                          style: const TextStyle(
-                            color: TablePlayColors.accent,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(width: 9),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item['item_name_snapshot'],
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              if (item['special_instruction'] != null)
-                                Text(
-                                  item['special_instruction'],
-                                  style: const TextStyle(
-                                    color: TablePlayColors.muted,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
+              );
+            }),
+          ],
+        ),
+      );
+
+  Widget servicesPage() => ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          if (session != null) ...[
+            TableSummary(session: session!),
+            const SizedBox(height: 20)
+          ],
+          Text(
+            'How can we help?',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 5),
+          const Text(
+            'Tap once and our team will be notified immediately.',
+            style: TextStyle(color: TablePlayColors.muted),
+          ),
+          const SizedBox(height: 22),
+          _serviceCard(
+            Icons.support_agent_rounded,
+            'Call a waiter',
+            'Need assistance at your table',
+            'call_waiter',
+            TablePlayColors.deep,
+          ),
+          _serviceCard(
+            Icons.water_drop_rounded,
+            'Request water',
+            'We’ll bring water to your table',
+            'water',
+            const Color(0xff346b99),
+          ),
+          _serviceCard(
+            Icons.receipt_long_rounded,
+            'Request the bill',
+            'Let the counter know you are ready',
+            'bill',
+            TablePlayColors.accent,
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: TablePlayColors.deep.withValues(alpha: .06),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline_rounded, color: TablePlayColors.deep),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Your table number is attached automatically. There is no need to leave this screen open.',
+                    style: TextStyle(
+                      color: TablePlayColors.muted,
+                      fontSize: 11,
+                      height: 1.4,
                     ),
                   ),
                 ),
               ],
             ),
-          );
-        }),
-      ],
-    ),
-  );
-
-  Widget servicesPage() => ListView(
-    padding: const EdgeInsets.all(20),
-    children: [
-      Text(
-        'How can we help?',
-        style: Theme.of(
-          context,
-        ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
-      ),
-      const SizedBox(height: 5),
-      const Text(
-        'Tap once and our team will be notified immediately.',
-        style: TextStyle(color: TablePlayColors.muted),
-      ),
-      const SizedBox(height: 22),
-      _serviceCard(
-        Icons.support_agent_rounded,
-        'Call a waiter',
-        'Need assistance at your table',
-        'call_waiter',
-        TablePlayColors.deep,
-      ),
-      _serviceCard(
-        Icons.water_drop_rounded,
-        'Request water',
-        'We’ll bring water to your table',
-        'water',
-        const Color(0xff346b99),
-      ),
-      _serviceCard(
-        Icons.receipt_long_rounded,
-        'Request the bill',
-        'Let the counter know you are ready',
-        'bill',
-        TablePlayColors.accent,
-      ),
-      const SizedBox(height: 14),
-      Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: TablePlayColors.deep.withValues(alpha: .06),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.info_outline_rounded, color: TablePlayColors.deep),
-            SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Your table number is attached automatically. There is no need to leave this screen open.',
-                style: TextStyle(
-                  color: TablePlayColors.muted,
-                  fontSize: 11,
-                  height: 1.4,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ],
-  );
+          ),
+        ],
+      );
 
   Widget _serviceCard(
     IconData icon,
@@ -1747,8 +1770,7 @@ class _HomeScreenV2State extends State<HomeScreenV2>
   ) {
     final sending = _serviceRequestsInFlight.contains(type);
     final sentAt = _serviceRequestsSentAt[type];
-    final recentlySent =
-        sentAt != null &&
+    final recentlySent = sentAt != null &&
         DateTime.now().difference(sentAt) < const Duration(seconds: 45);
     return InkWell(
       onTap: sending ? null : () => requestService(type, title),
@@ -1821,41 +1843,42 @@ class _HomeScreenV2State extends State<HomeScreenV2>
   }
 
   Widget _emptyPanel(IconData icon, String title, String subtitle) => Container(
-    padding: const EdgeInsets.all(36),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: TablePlayColors.border),
-    ),
-    child: Column(
-      children: [
-        Icon(icon, size: 46, color: TablePlayColors.accent),
-        const SizedBox(height: 12),
-        Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+        padding: const EdgeInsets.all(36),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: TablePlayColors.border),
         ),
-        const SizedBox(height: 5),
-        Text(
-          subtitle,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: TablePlayColors.muted, fontSize: 11),
+        child: Column(
+          children: [
+            Icon(icon, size: 46, color: TablePlayColors.accent),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style:
+                  const TextStyle(color: TablePlayColors.muted, fontSize: 11),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 
   Color _statusColor(String status) => switch (status) {
-    'ready' || 'served' => TablePlayColors.success,
-    'rejected' || 'cancelled' => const Color(0xffc34836),
-    'preparing' => const Color(0xff346b99),
-    _ => TablePlayColors.accent,
-  };
+        'ready' || 'served' => TablePlayColors.success,
+        'rejected' || 'cancelled' => const Color(0xffc34836),
+        'preparing' => const Color(0xff346b99),
+        _ => TablePlayColors.accent,
+      };
   IconData _statusIcon(String status) => switch (status) {
-    'ready' => Icons.notifications_active_rounded,
-    'served' => Icons.check_circle_rounded,
-    'preparing' => Icons.soup_kitchen_rounded,
-    'rejected' || 'cancelled' => Icons.cancel_rounded,
-    _ => Icons.schedule_rounded,
-  };
+        'ready' => Icons.notifications_active_rounded,
+        'served' => Icons.check_circle_rounded,
+        'preparing' => Icons.soup_kitchen_rounded,
+        'rejected' || 'cancelled' => Icons.cancel_rounded,
+        _ => Icons.schedule_rounded,
+      };
 }

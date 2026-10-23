@@ -2,6 +2,11 @@
 @section('title', 'Menu')
 @section('eyebrow', 'Administration')
 @section('page-title', 'Menu management')
+@push('head')
+<style>
+.confirmation-dialog { margin: auto; }
+</style>
+@endpush
 
 @section('content')
 <div class="page-heading"><div><h2>Build your digital menu</h2><p>Organize categories, detailed dishes, photos, pricing, and live availability for every device.</p></div></div>
@@ -48,7 +53,16 @@
                 <td data-label="Prep">{{ $item->preparation_minutes ?: '—' }}{{ $item->preparation_minutes ? ' min' : '' }}</td>
                 <td data-label="Price">{{ $appSettings?->currency ?: 'INR' }} {{ number_format($item->price,2) }}</td>
                 <td data-label="Availability"><x-status :value="$item->is_available ? 'available' : 'disabled'" :label="$item->is_available ? 'Available' : 'Unavailable'" /></td>
-                <td data-label="Action"><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="button button--small" type="button" data-menu-edit="menu-edit-{{ $item->id }}">Edit</button><form method="post" action="{{ route('admin.menu-items.toggle',$item) }}">@csrf<button class="button button--secondary button--small">{{ $item->is_available ? 'Mark unavailable' : 'Make available' }}</button></form></div></td>
+                <td data-label="Action"><div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button class="button button--small" type="button" data-menu-edit="menu-edit-{{ $item->id }}">Edit</button>
+                    <form method="post" action="{{ route('admin.menu-items.toggle',$item) }}">@csrf<button class="button button--secondary button--small">{{ $item->is_available ? 'Mark unavailable' : 'Make available' }}</button></form>
+                    <form method="post" action="{{ route('admin.menu-items.destroy',$item) }}">
+                        @csrf @method('DELETE')
+                        <button class="button button--danger button--small" type="submit" aria-label="Delete {{ $item->name }}"
+                            data-confirm="Remove &quot;{{ $item->name }}&quot; from the menu? Past orders and bills will be kept."
+                            data-confirm-title="Delete menu item?" data-confirm-button="Delete item" data-confirm-tone="danger">Delete</button>
+                    </form>
+                </div></td>
             </tr>
             <tr id="menu-edit-{{ $item->id }}" hidden><td colspan="6">
                 <form method="post" enctype="multipart/form-data" action="{{ route('admin.menu-items.update',$item) }}" style="padding:12px 0">@csrf @method('PUT')

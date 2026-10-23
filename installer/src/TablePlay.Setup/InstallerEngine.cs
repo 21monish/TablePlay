@@ -27,9 +27,10 @@ internal sealed record LicenseTrustConfiguration(
 
 internal static class InstallerEngine
 {
-    private const int ServerPort = 8000;
-    private const int ReverbPort = 8080;
+    private static int ServerPort = TablePlay.Runtime.LocalPorts.PreferredHttp;
+    private static int ReverbPort = TablePlay.Runtime.LocalPorts.PreferredRealtime;
     private const int DatabasePort = 3310;
+    private static int SelectedDatabasePort = DatabasePort;
     private const string DatabaseUser = "tableplay_app";
     private const string ServiceName = "TablePlayServer";
     private static readonly byte[] OverlayMagic = Encoding.ASCII.GetBytes("TABLEPLAY_PAYLOAD_V1");
@@ -88,15 +89,15 @@ internal static class InstallerEngine
             Directory.CreateDirectory(Path.Combine(installRoot, "server", "storage", "app", "updates"));
 
             progress.Report(new InstallProgress(24, "Configuring the local database…"));
-            WriteDatabaseConfiguration(installRoot, databasePassword);
-            await InitializeDatabaseAsync(installRoot, databasePassword, progress);
+            WriteDatabaseConfiguration(installRoot, databasePassword, SelectedDatabasePort);
+            await InitializeDatabaseAsync(installRoot, databasePassword, progress, SelectedDatabasePort);
 
             progress.Report(new InstallProgress(35, "Starting the private database…"));
             var databaseInitialization = WriteDatabaseInitializationScript(installRoot, databasePassword);
             try
             {
                 temporaryDatabase = StartTemporaryDatabase(installRoot, databaseInitialization);
-                await WaitForDatabaseAsync(installRoot, temporaryDatabase, TimeSpan.FromSeconds(60));
+                await WaitForDatabaseAsync(installRoot, temporaryDatabase, TimeSpan.FromSeconds(60), SelectedDatabasePort);
             }
             finally
             {
@@ -104,7 +105,7 @@ internal static class InstallerEngine
             }
 
             progress.Report(new InstallProgress(42, "Creating Laravel production configuration…"));
-            WriteLaravelEnvironment(installRoot, localIp, DatabaseUser, databasePassword, appKey, reverbSecret, licenseTrust);
+            WriteLaravelEnvironment(installRoot, localIp, DatabaseUser, databasePassword, appKey, reverbSecret, licenseTrust, SelectedDatabasePort);
             await ValidatePhpRuntimeAsync(installRoot, progress, 45);
             var releases = PrepareBundledReleases(installRoot);
 
@@ -180,6 +181,7 @@ internal static class InstallerEngine
     private static async Task<InstallResult> UpgradeAsync(string installRoot, IProgress<InstallProgress> progress)
     {
         ValidateExistingInstallation(installRoot);
+        LoadSavedPorts(installRoot);
         var stagingRoot = Path.Combine(Path.GetTempPath(), "TablePlayUpgrade_" + Guid.NewGuid().ToString("N"));
         var rollbackRoot = Path.Combine(Path.GetTempPath(), "TablePlayRollback_" + Guid.NewGuid().ToString("N"));
         Process? temporaryDatabase = null;
@@ -213,11 +215,11 @@ internal static class InstallerEngine
             await WaitForServiceStoppedAsync(TimeSpan.FromSeconds(45));
             await WaitForPortClosedAsync("127.0.0.1", ServerPort, TimeSpan.FromSeconds(45));
             await WaitForPortClosedAsync("127.0.0.1", ReverbPort, TimeSpan.FromSeconds(45));
-            await WaitForPortClosedAsync("127.0.0.1", DatabasePort, TimeSpan.FromSeconds(45));
+            await WaitForPortClosedAsync("127.0.0.1", SelectedDatabasePort, TimeSpan.FromSeconds(45));
             TerminateProcessesUnderRoot(installRoot);
 
             temporaryDatabase = StartTemporaryDatabase(installRoot);
-            await WaitForDatabaseAsync(installRoot, temporaryDatabase, TimeSpan.FromSeconds(60));
+            await WaitForDatabaseAsync(installRoot, temporaryDatabase, TimeSpan.FromSeconds(60), SelectedDatabasePort);
             backupPath = await CreateUpgradeBackupAsync(installRoot, version, progress);
             await StopTemporaryDatabaseAsync(installRoot, temporaryDatabase);
             temporaryDatabase = null;
@@ -240,7 +242,7 @@ internal static class InstallerEngine
 
             progress.Report(new InstallProgress(52, "Starting the private database for migrationâ€¦"));
             temporaryDatabase = StartTemporaryDatabase(installRoot);
-            await WaitForDatabaseAsync(installRoot, temporaryDatabase, TimeSpan.FromSeconds(60));
+            await WaitForDatabaseAsync(installRoot, temporaryDatabase, TimeSpan.FromSeconds(60), SelectedDatabasePort);
             var php = Path.Combine(installRoot, "php", "php.exe");
             var server = Path.Combine(installRoot, "server");
 
@@ -281,7 +283,7 @@ internal static class InstallerEngine
                     await WaitForServiceStoppedAsync(TimeSpan.FromSeconds(45));
                     await WaitForPortClosedAsync("127.0.0.1", ServerPort, TimeSpan.FromSeconds(45));
                     await WaitForPortClosedAsync("127.0.0.1", ReverbPort, TimeSpan.FromSeconds(45));
-                    await WaitForPortClosedAsync("127.0.0.1", DatabasePort, TimeSpan.FromSeconds(45));
+                    await WaitForPortClosedAsync("127.0.0.1", SelectedDatabasePort, TimeSpan.FromSeconds(45));
                     TerminateProcessesUnderRoot(installRoot);
                     RestoreReplaceableFiles(rollbackRoot, installRoot);
                     WritePhpConfiguration(installRoot);
@@ -289,7 +291,7 @@ internal static class InstallerEngine
                 if (databaseMutationStarted && backupPath is not null)
                 {
                     temporaryDatabase = StartTemporaryDatabase(installRoot);
-                    await WaitForDatabaseAsync(installRoot, temporaryDatabase, TimeSpan.FromSeconds(60));
+                    await WaitForDatabaseAsync(installRoot, temporaryDatabase, TimeSpan.FromSeconds(60), SelectedDatabasePort);
                     await RestoreUpgradeBackupAsync(installRoot, backupPath, progress);
                     await StopTemporaryDatabaseAsync(installRoot, temporaryDatabase);
                     temporaryDatabase = null;
@@ -618,7 +620,7 @@ internal static class InstallerEngine
         catch (JsonException) { node = new JsonObject(); }
         node["ServerPort"] ??= ServerPort;
         node["ReverbPort"] ??= ReverbPort;
-        node["DatabasePort"] ??= DatabasePort;
+        node["DatabasePort"] ??= SelectedDatabasePort;
         node["LocalIp"] = FindLocalIPv4Address();
         node["ProductVersion"] = version;
         node["LastUpgradeAt"] = DateTimeOffset.Now;
@@ -1147,7 +1149,7 @@ internal static class InstallerEngine
         {
             ServerPort,
             ReverbPort,
-            DatabasePort,
+            DatabasePort = databasePort,
             InstalledAt = DateTimeOffset.Now,
             LocalIp = localIp,
         };
@@ -1391,6 +1393,7 @@ internal static class InstallerEngine
             await RunProcessAsync(php, ["artisan", "tableplay:bootstrap-installation", bootstrap, "--delete-config"], server, TimeSpan.FromMinutes(5), progress, 30);
             EnsurePublicStorageLink(testRoot);
             await RunProcessAsync(php, ["artisan", "optimize"], server, TimeSpan.FromMinutes(5), progress, 35);
+            await VerifyReleaseWorkflowsAsync(testRoot, createFixtures: true, progress, 36);
             var preservedFile = Path.Combine(server, "storage", "app", "public", "lifecycle-preserved.txt");
             File.WriteAllText(preservedFile, "preserved");
             await StopTemporaryDatabaseAsync(testRoot, database);
@@ -1420,6 +1423,7 @@ internal static class InstallerEngine
             await RunProcessAsync(php, ["artisan", "tableplay:bootstrap-upgrade", upgrade, "--delete-config"], server, TimeSpan.FromMinutes(5), progress, 70);
             EnsurePublicStorageLink(testRoot);
             await RunProcessAsync(php, ["artisan", "optimize"], server, TimeSpan.FromMinutes(5), progress, 80);
+            await VerifyReleaseWorkflowsAsync(testRoot, createFixtures: false, progress, 81);
             if (!File.Exists(preservedFile) || File.ReadAllText(preservedFile) != "preserved")
                 throw new InvalidDataException("The lifecycle upgrade did not preserve restaurant storage.");
             await RunProcessAsync(
@@ -1440,6 +1444,95 @@ internal static class InstallerEngine
             try { DeleteDirectorySafely(testRoot); } catch { }
             try { DeleteDirectorySafely(snapshot); } catch { }
         }
+    }
+
+    private static async Task VerifyReleaseWorkflowsAsync(string root, bool createFixtures, IProgress<InstallProgress>? progress, int percent)
+    {
+        var verification = Path.Combine(root, "config", "verify-release-workflows.php");
+        File.WriteAllText(verification, """
+            <?php
+            $root = dirname(__DIR__);
+            require $root.'/server/vendor/autoload.php';
+            $app = require $root.'/server/bootstrap/app.php';
+            $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+            try {
+                $check = static function (bool $valid, string $message): void { if (!$valid) throw new RuntimeException($message); };
+                $setup = ($argv[1] ?? '') === 'setup';
+                $trustPath = __DIR__.'/release-test-public-key.json';
+                config(['app.timezone' => 'Asia/Kolkata', 'tableplay.device_fingerprint_override' => 'release-lifecycle-test']);
+                date_default_timezone_set('Asia/Kolkata');
+                if ($setup) {
+                    $keys = app(App\Services\LicenseSignatureService::class)->generateKeyPair();
+                    $trust = ['key_id' => 'release-test-v1', 'public_key' => $keys['public_key']];
+                    file_put_contents($trustPath, json_encode($trust, JSON_THROW_ON_ERROR));
+                } else {
+                    $trust = json_decode(file_get_contents($trustPath), true, flags: JSON_THROW_ON_ERROR);
+                }
+                config([
+                    'tableplay.license_key_id' => $trust['key_id'], 'tableplay.license_public_key' => $trust['public_key'],
+                    'tableplay.license_private_key' => $keys['private_key'] ?? '',
+                    'tableplay.trusted_license_public_keys' => [$trust['key_id'] => $trust['public_key']],
+                ]);
+                $licenses = app(App\Services\LocalLicenseService::class);
+                if ($setup) {
+                    $installation = $licenses->installation();
+                    $plan = App\Models\CommercialPlan::where('slug', 'trial')->firstOrFail();
+                    $now = Illuminate\Support\Carbon::now('UTC')->startOfSecond();
+                    $envelope = app(App\Services\LicenseSignatureService::class)->sign([
+                        'license_uuid' => (string) Illuminate\Support\Str::uuid(), 'license_reference' => 'TP-RELEASE-LIFECYCLE',
+                        'license_revision' => 1, 'installation_uuid' => $installation->installation_uuid,
+                        'device_fingerprint' => $installation->device_fingerprint, 'activation_method' => 'online',
+                        'plan' => $plan->slug, 'status' => 'trial', 'features' => $plan->features,
+                        'limits' => ['paired_tables' => 3], 'max_paired_tables' => 3,
+                        'issued_at' => $now->toIso8601String(), 'starts_at' => $now->copy()->subDay()->toIso8601String(),
+                        'expires_at' => $now->copy()->addDays(14)->toIso8601String(),
+                        'subscription_expires_at' => $now->copy()->addDays(14)->toIso8601String(),
+                        'grace_ends_at' => $now->copy()->addDays(21)->toIso8601String(),
+                    ]);
+                    $subscription = $licenses->installEnvelope($envelope, 'cloud');
+                    $startedAt = $subscription->starts_at->timestamp;
+                    $subscription->update(['last_verified_at' => now()->addMinute()]);
+                    $check($subscription->fresh()->starts_at->timestamp === $startedAt, 'MariaDB rewrote a signed licence start date.');
+                    $admin = App\Models\User::where('username', 'admin')->firstOrFail();
+                    $category = App\Models\Category::create(['name' => 'Release test category', 'sort_order' => 1, 'is_active' => true]);
+                    $item = App\Models\MenuItem::create(['category_id' => $category->id, 'name' => 'Release regression dish', 'price' => 100, 'food_type' => 'veg', 'spice_level' => 'none', 'is_active' => true, 'is_available' => true]);
+                    App\Models\MenuItem::create(['category_id' => $category->id, 'name' => 'Release visible dish', 'price' => 50, 'food_type' => 'veg', 'spice_level' => 'none', 'is_active' => true, 'is_available' => true]);
+                    $table = App\Models\DiningTable::create(['table_code' => 'T-RELEASE', 'table_name' => 'Release test table', 'capacity' => 4, 'status' => 'occupied', 'is_active' => true]);
+                    $session = App\Models\TableSession::create(['dining_table_id' => $table->id, 'session_code' => 'SES-RELEASE', 'guest_count' => 1, 'opened_at' => now(), 'status' => 'open']);
+                    $order = App\Models\Order::create(['table_session_id' => $session->id, 'order_number' => 'ORD-RELEASE', 'order_sequence' => 1, 'subtotal' => 100, 'total_amount' => 100, 'status' => 'served']);
+                    App\Models\OrderItem::create(['order_id' => $order->id, 'menu_item_id' => $item->id, 'item_name_snapshot' => $item->name, 'unit_price' => 100, 'quantity' => 1, 'line_total' => 100, 'status' => 'served']);
+                    $request = Illuminate\Http\Request::create('/admin/menu-items/'.$item->id, 'DELETE');
+                    $request->setUserResolver(fn () => $admin);
+                    app(App\Services\MenuItemDeletionService::class)->delete($request, $item);
+                }
+                foreach (['restaurant_subscriptions', 'cloud_subscriptions'] as $name) {
+                    $column = Illuminate\Support\Facades\DB::select("SHOW COLUMNS FROM {$name} LIKE 'starts_at'")[0];
+                    $check(str_starts_with(strtolower($column->Type), 'datetime') && !str_contains(strtolower($column->Extra), 'on update'), $name.' start date is mutable.');
+                }
+                $state = app(App\Services\EntitlementService::class)->state();
+                $check($state['licensed'] && $state['signature_valid'], 'The staged licence did not remain verified.');
+                $removed = App\Models\MenuItem::withTrashed()->where('name', 'Release regression dish')->firstOrFail();
+                $check($removed->trashed() && !$removed->is_available && !$removed->is_active, 'Deleted menu dish was restored or made available.');
+                $check(App\Models\MenuItem::where('name', 'Release regression dish')->doesntExist(), 'Deleted dish remains on the live menu.');
+                $order = App\Models\Order::where('order_number', 'ORD-RELEASE')->firstOrFail();
+                $line = $order->items()->firstOrFail();
+                $check((float) $order->total_amount === 100.0 && (float) $line->unit_price === 100.0 && $line->item_name_snapshot === 'Release regression dish' && $line->menuItem->id === $removed->id, 'Menu deletion or upgrade changed order history.');
+                $admin = App\Models\User::where('username', 'admin')->firstOrFail();
+                $request = Illuminate\Http\Request::create('/admin/menu');
+                $session = app('session')->driver('array'); $session->start(); $request->setLaravelSession($session);
+                $app->instance('request', $request);
+                Illuminate\Support\Facades\Auth::guard('web')->setUser($admin);
+                Illuminate\Support\Facades\View::share('errors', new Illuminate\Support\ViewErrorBag());
+                $html = app(App\Http\Controllers\Web\AdminController::class)->menu()->render();
+                $check(str_contains($html, 'data-confirm-title="Delete menu item?"') && str_contains($html, 'data-confirmation-dialog') && !str_contains($html, 'return confirm('), 'The staged menu still uses a native browser confirmation.');
+                echo 'PASS: staged MariaDB licence signature, immutable dates, menu deletion, retained order history and custom confirmation.'.PHP_EOL;
+            } catch (Throwable $error) { fwrite(STDERR, $error->getMessage().PHP_EOL); exit(1); }
+            """, new UTF8Encoding(false));
+        try
+        {
+            await RunProcessAsync(Path.Combine(root, "php", "php.exe"), [verification, createFixtures ? "setup" : "verify"], Path.Combine(root, "server"), TimeSpan.FromMinutes(2), progress, percent);
+        }
+        finally { try { File.Delete(verification); } catch { } }
     }
 
     internal static void AssertRestaurantLicenseEnvironment(string root, LicenseTrustConfiguration licenseTrust)
@@ -1779,7 +1872,7 @@ internal static class InstallerEngine
         if (branding.RootElement.ValueKind != JsonValueKind.Object
             || !branding.RootElement.TryGetProperty("restaurant_name", out var name)
             || string.IsNullOrWhiteSpace(name.GetString()))
-            throw new InvalidDataException("Port 8000 responded, but it was not a valid TablePlay restaurant API.");
+            throw new InvalidDataException($"Port {ServerPort} responded, but it was not a valid TablePlay restaurant API.");
 
         var publicStorage = Path.Combine(root, "server", "public", "storage");
         if ((File.GetAttributes(publicStorage) & FileAttributes.ReparsePoint) == 0)
@@ -1846,27 +1939,24 @@ internal static class InstallerEngine
 
     private static void EnsureRequiredPortsAreFree()
     {
-        var required = new Dictionary<int, string>
-        {
-            [ServerPort] = "Laravel web server",
-            [ReverbPort] = "Reverb real-time server",
-            [DatabasePort] = "private database",
-        };
-        var occupied = IPGlobalProperties.GetIPGlobalProperties()
-            .GetActiveTcpListeners()
-            .Select(endpoint => endpoint.Port)
-            .ToHashSet();
-        var conflicts = required
-            .Where(item => occupied.Contains(item.Key))
-            .Select(item => $"{item.Key} ({item.Value})")
-            .ToArray();
+        // Fresh installs select once and persist. Upgrades load saved ports
+        // instead: silently changing an existing address would strand devices.
+        ServerPort = TablePlay.Runtime.LocalPorts.FindAvailable(TablePlay.Runtime.LocalPorts.PreferredHttp);
+        ReverbPort = TablePlay.Runtime.LocalPorts.FindAvailable(TablePlay.Runtime.LocalPorts.PreferredRealtime, ServerPort);
+        SelectedDatabasePort = TablePlay.Runtime.LocalPorts.FindAvailable(DatabasePort, ServerPort, ReverbPort);
+    }
 
-        if (conflicts.Length > 0)
-        {
-            throw new InvalidOperationException(
-                "Required local ports are already in use: " + string.Join(", ", conflicts)
-                + ". Stop the existing XAMPP/TablePlay development servers, then run setup again.");
-        }
+    private static void LoadSavedPorts(string root)
+    {
+        var path = Path.Combine(root, "config", "installation.json");
+        var node = JsonNode.Parse(File.ReadAllText(path))?.AsObject()
+            ?? throw new InvalidDataException("The saved TablePlay port configuration is missing.");
+        ServerPort = node["ServerPort"]?.GetValue<int>() ?? 8000;
+        ReverbPort = node["ReverbPort"]?.GetValue<int>() ?? 8080;
+        SelectedDatabasePort = node["DatabasePort"]?.GetValue<int>() ?? DatabasePort;
+        var saved = new[] { ServerPort, ReverbPort, SelectedDatabasePort };
+        if (saved.Any(port => port is < 1024 or > 65535) || saved.Distinct().Count() != 3)
+            throw new InvalidDataException("The saved TablePlay ports must be valid and different. No configuration was changed.");
     }
 
     private static string RandomToken(int length)

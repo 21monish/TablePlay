@@ -61,6 +61,12 @@ class DatabaseSeeder extends Seeder
 
     private function provisionSuperAdmin(Role $role): void
     {
+        // Deployment secrets bootstrap a NEW account; they must never undo a
+        // password reset, verification, suspension or an owner's profile edits.
+        if (User::where('username', 'superadmin')->exists()) {
+            return;
+        }
+
         $email = strtolower(trim((string) config('tableplay.superadmin.email', '')));
         $password = (string) config('tableplay.superadmin.password', '');
 

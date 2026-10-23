@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' show max, Random;
 
 import 'package:flutter/material.dart';
@@ -12,9 +13,16 @@ import '../core/session_store.dart';
 import '../theme/tableplay_theme.dart';
 import '../widgets/common.dart';
 import 'plan_controls.dart';
+import 'admin_experience.dart';
 
 class StaffHome extends StatefulWidget {
-  const StaffHome({super.key, required this.store, required this.onSignedOut});
+  const StaffHome({
+    super.key,
+    required this.store,
+    required this.onSignedOut,
+    this.apiClient,
+  });
+  final ApiClient? apiClient;
   final SessionStore store;
   final VoidCallback onSignedOut;
   @override
@@ -35,6 +43,10 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
   dynamic data;
   bool loading = true, refreshing = false;
   String? error;
+  bool sessionRejected = false;
+  int _operationsSection = 0;
+  String _catalogQuery = '', _catalogAvailability = 'all';
+  final _catalogSearch = TextEditingController();
   Map<String, dynamic> branding = {};
   Map<String, dynamic> entitlements = {};
   DateTime? _brandingLoadedAt;
@@ -101,6 +113,21 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
         'System health',
         'Server and device status',
         Icons.monitor_heart_rounded,
+      ),
+      _StaffDestination(
+        'Setup guide',
+        'Connect apps and complete onboarding',
+        Icons.checklist_rounded,
+      ),
+      _StaffDestination(
+        'Licence',
+        'Activation, expiry and verification',
+        Icons.verified_user_outlined,
+      ),
+      _StaffDestination(
+        'Orders & billing',
+        'Counter operations for administrators',
+        Icons.point_of_sale_rounded,
       ),
     ],
     'counter' => const [
@@ -184,7 +211,9 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    api = ApiClient(baseUrl: widget.store.baseUrl, token: widget.store.token);
+    api =
+        widget.apiClient ??
+        ApiClient(baseUrl: widget.store.baseUrl, token: widget.store.token);
     load();
     _startPolling();
   }
@@ -192,7 +221,15 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
   void _startPolling() {
     polling?.cancel();
     polling = Timer.periodic(
-      Duration(seconds: role == 'admin' ? (sectionIndex == 0 ? 20 : 60) : 7),
+      Duration(
+        seconds: role == 'admin'
+            ? (sectionIndex == 10
+                  ? 7
+                  : sectionIndex == 0
+                  ? 20
+                  : 60)
+            : 7,
+      ),
       (_) => load(silent: true),
     );
   }
@@ -214,6 +251,7 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     polling?.cancel();
     api.close();
+    _catalogSearch.dispose();
     super.dispose();
   }
 
@@ -242,6 +280,9 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
                   5 => '/admin/settings',
                   6 => '/admin/automation',
                   7 => '/admin/system',
+                  8 => '/admin/setup',
+                  9 => '/admin/license',
+                  10 => '/counter/dashboard',
                   _ => '/admin/dashboard',
                 },
         'counter' => '/counter/dashboard',
@@ -294,11 +335,13 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
       }
       previousAttentionCount = count;
       final fingerprint = jsonEncode(next);
-      if (mounted && (!silent || fingerprint != _dataFingerprint)) {
+      if (mounted &&
+          (!silent || fingerprint != _dataFingerprint || error != null)) {
         setState(() {
           data = next;
           loading = false;
           error = null;
+          sessionRejected = false;
           _lastUpdatedAt = DateTime.now();
         });
       }
@@ -307,6 +350,7 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
       if (exception is ApiException && exception.status == 401) {
         if (mounted) {
           setState(() {
+            sessionRejected = true;
             error =
                 'The local server could not verify this saved session. Your login is still saved—check the server connection and retry, or use Sign out to remove it from this device.';
             loading = false;
@@ -345,8 +389,9 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
         }
         return;
       }
-      if (mounted && !silent) {
+      if (mounted) {
         setState(() {
+          sessionRejected = false;
           error = exception.toString();
           loading = false;
         });
@@ -628,6 +673,7 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
                         widget.store.baseUrl,
                     planName: _planName,
                     online: error == null,
+                    sessionRejected: sessionRejected,
                     refreshing: refreshing,
                     lastUpdatedAt: _lastUpdatedAt,
                     onRefresh: () => load(),
@@ -724,6 +770,7 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
           ),
           Expanded(
             child: ListView.builder(
+              key: const Key('staff-navigation'),
               padding: const EdgeInsets.symmetric(horizontal: 10),
               itemCount: destinations.length,
               itemBuilder: (context, index) {
@@ -812,6 +859,8 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
                       Text(
                         error == null
                             ? 'Local server online'
+                            : sessionRejected
+                            ? 'Sign in required'
                             : 'Connection issue',
                         style: const TextStyle(
                           color: Colors.white,
@@ -917,9 +966,9 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
       const SizedBox(height: 16),
       Center(
         child: FilledButton.icon(
-          onPressed: load,
-          icon: const Icon(Icons.refresh),
-          label: const Text('Try again'),
+          onPressed: sessionRejected ? logout : load,
+          icon: Icon(sessionRejected ? Icons.login_rounded : Icons.refresh),
+          label: Text(sessionRejected ? 'Sign in again' : 'Try again'),
         ),
       ),
     ],
@@ -1026,7 +1075,7 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
   Widget _statsGrid(List<Widget> children) => GridView.builder(
     gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
       maxCrossAxisExtent: 300,
-      mainAxisExtent: 132,
+      mainAxisExtent: 148,
       crossAxisSpacing: 10,
       mainAxisSpacing: 10,
     ),
@@ -1058,8 +1107,140 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
     5 => _adminSettings(),
     6 => _adminAutomation(),
     7 => _adminSystem(),
+    8 => _page([
+      SetupGuidePanel(
+        data: data as Map,
+        onNavigate: _openSetupStep,
+        onStaffQr: () => _connectionQr('/admin/setup/staff-connection'),
+      ),
+    ]),
+    9 => _page([
+      LicensePanel(
+        data: data as Map,
+        onActivate: (url, key) async {
+          await api.post('/admin/license/activate', {
+            'cloud_url': url,
+            'license_key': key,
+          }, const Duration(seconds: 110));
+          await _licenceUpdated('Licence activated and verified.');
+        },
+        onSync: () async {
+          await api.post(
+            '/admin/license/sync',
+            null,
+            const Duration(seconds: 40),
+          );
+          await _licenceUpdated('Licence synchronized and verified.');
+        },
+        onExport: _exportActivationRequest,
+        onImport: _importLicence,
+      ),
+    ]),
+    10 => _counter(viewIndex: _operationsSection),
     _ => _adminDashboard(),
   };
+
+  void _openSetupStep(String key) {
+    final index = switch (key) {
+      'identity' => 5,
+      'health' => 7,
+      'tables' || 'pairing' => 1,
+      'staff' => 2,
+      'test' => 10,
+      _ => 8,
+    };
+    if (index == 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Application download links are below the connection instructions.',
+          ),
+        ),
+      );
+    } else {
+      _selectSection(index);
+    }
+  }
+
+  Future<void> _connectionQr(String path) async {
+    try {
+      final payload = await api.post(path);
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (_) => ConnectionQrDialog(
+          payload: Map<String, dynamic>.from(payload as Map),
+        ),
+      );
+    } catch (exception) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$exception'),
+            backgroundColor: TablePlayColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _licenceUpdated(String message) async {
+    await load(force: true);
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  Future<void> _exportActivationRequest() async {
+    final response = await api.post('/admin/license/offline-request');
+    final bytes = Uint8List.fromList(
+      utf8.encode(
+        const JsonEncoder.withIndent('  ').convert(response['document']),
+      ),
+    );
+    final path = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save offline activation request',
+      fileName: '${response['filename']}',
+      type: FileType.custom,
+      allowedExtensions: ['tpr'],
+      bytes: bytes,
+    );
+    if (path == null) return;
+    if (Platform.isWindows) await File(path).writeAsBytes(bytes, flush: true);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Activation request saved. Transfer it privately to TablePlay Cloud.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _importLicence() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['tpl', 'json'],
+      withData: true,
+    );
+    if (result == null) return;
+    final file = result.files.single;
+    if (file.size > 64 * 1024 || file.bytes == null) {
+      throw const FormatException(
+        'Choose a signed TablePlay licence file no larger than 64 KB.',
+      );
+    }
+    await api.uploadFile(
+      '/admin/license/import',
+      field: 'license_file',
+      bytes: file.bytes!,
+      filename: file.name,
+    );
+    await _licenceUpdated('Offline licence imported and verified.');
+  }
 
   Widget _adminDashboard() {
     final view = data as Map;
@@ -1342,55 +1523,103 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
               subtitle: Text(
                 '${table['capacity']} seats · ${table['sessions_count']} visits · ${pairing == null ? 'No tablet paired' : pairing['device']?['device_name'] ?? 'Tablet paired'}',
               ),
-              trailing: Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  StatusPill('${table['status']}'),
-                  if (pairing != null)
-                    IconButton(
-                      tooltip: 'Unpair tablet',
-                      onPressed: () async {
-                        if (await confirm(
-                          'Unpair tablet?',
-                          'The customer app will stop controlling ${table['table_code']}.',
-                          action: 'Unpair',
-                          danger: true,
-                        )) {
-                          act(
-                            '/admin/pairings/${pairing['id']}/unpair',
-                            success: 'Tablet unpaired.',
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.link_off_rounded),
+              trailing: MediaQuery.sizeOf(context).width < 980
+                  ? PopupMenuButton<String>(
+                      tooltip: 'Table actions',
+                      onSelected: (action) =>
+                          _tableAction(action, table, pairing),
+                      itemBuilder: (_) => [
+                        if (pairing == null)
+                          PopupMenuItem(
+                            value: 'qr',
+                            enabled:
+                                table['is_active'] == true &&
+                                table['status'] != 'disabled' &&
+                                _featureAllowed('customer_app') &&
+                                pairingControl.quotaAvailable,
+                            child: const Text('Create Customer pairing QR'),
+                          ),
+                        if (pairing != null)
+                          const PopupMenuItem(
+                            value: 'unpair',
+                            child: Text('Unpair tablet'),
+                          ),
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Text('Edit table'),
+                        ),
+                        const PopupMenuItem(
+                          value: 'remove',
+                          child: Text(
+                            'Remove table',
+                            style: TextStyle(color: TablePlayColors.danger),
+                          ),
+                        ),
+                      ],
+                    )
+                  : Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        StatusPill('${table['status']}'),
+                        if (pairing == null &&
+                            table['is_active'] == true &&
+                            table['status'] != 'disabled')
+                          IconButton(
+                            tooltip: 'Create Customer pairing QR',
+                            onPressed:
+                                _featureAllowed('customer_app') &&
+                                    pairingControl.quotaAvailable
+                                ? () => _connectionQr(
+                                    '/admin/tables/${table['id']}/pairing-qr',
+                                  )
+                                : null,
+                            icon: const Icon(Icons.qr_code_rounded),
+                          ),
+                        if (pairing != null)
+                          IconButton(
+                            tooltip: 'Unpair tablet',
+                            onPressed: () async {
+                              if (await confirm(
+                                'Unpair tablet?',
+                                'The customer app will stop controlling ${table['table_code']}.',
+                                action: 'Unpair',
+                                danger: true,
+                              )) {
+                                act(
+                                  '/admin/pairings/${pairing['id']}/unpair',
+                                  success: 'Tablet unpaired.',
+                                );
+                              }
+                            },
+                            icon: const Icon(Icons.link_off_rounded),
+                          ),
+                        IconButton(
+                          tooltip: 'Edit table',
+                          onPressed: () => _editTable(table),
+                          icon: const Icon(Icons.edit_outlined),
+                        ),
+                        IconButton(
+                          tooltip: 'Remove table',
+                          onPressed: () async {
+                            if (await confirm(
+                              'Remove ${table['table_code']}?',
+                              'Unused tables are deleted. Tables with history are safely archived.',
+                              action: 'Remove table',
+                              danger: true,
+                            )) {
+                              _delete(
+                                '/admin/tables/${table['id']}',
+                                'Table removed safely.',
+                              );
+                            }
+                          },
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: TablePlayColors.danger,
+                          ),
+                        ),
+                      ],
                     ),
-                  IconButton(
-                    tooltip: 'Edit table',
-                    onPressed: () => _editTable(table),
-                    icon: const Icon(Icons.edit_outlined),
-                  ),
-                  IconButton(
-                    tooltip: 'Remove table',
-                    onPressed: () async {
-                      if (await confirm(
-                        'Remove ${table['table_code']}?',
-                        'Unused tables are deleted. Tables with history are safely archived.',
-                        action: 'Remove table',
-                        danger: true,
-                      )) {
-                        _delete(
-                          '/admin/tables/${table['id']}',
-                          'Table removed safely.',
-                        );
-                      }
-                    },
-                    icon: const Icon(
-                      Icons.delete_outline_rounded,
-                      color: TablePlayColors.danger,
-                    ),
-                  ),
-                ],
-              ),
             ),
           ),
         );
@@ -1420,6 +1649,40 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
         );
       }),
     ]);
+  }
+
+  Future<void> _tableAction(String action, Map table, Map? pairing) async {
+    switch (action) {
+      case 'qr':
+        await _connectionQr('/admin/tables/${table['id']}/pairing-qr');
+      case 'edit':
+        await _editTable(table);
+      case 'unpair':
+        if (pairing != null &&
+            await confirm(
+              'Unpair tablet?',
+              'The customer app will stop controlling ${table['table_code']}.',
+              action: 'Unpair',
+              danger: true,
+            )) {
+          await act(
+            '/admin/pairings/${pairing['id']}/unpair',
+            success: 'Tablet unpaired.',
+          );
+        }
+      case 'remove':
+        if (await confirm(
+          'Remove ${table['table_code']}?',
+          'Unused tables are deleted. Tables with history are safely archived.',
+          action: 'Remove table',
+          danger: true,
+        )) {
+          await _delete(
+            '/admin/tables/${table['id']}',
+            'Table removed safely.',
+          );
+        }
+    }
   }
 
   Widget _adminTeam() {
@@ -1499,104 +1762,217 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
           ),
         ],
       ),
-      ...categories.map((value) {
-        final category = value as Map;
-        final items = category['menu_items'] as List? ?? [];
-        return Card(
-          child: ExpansionTile(
-            initiallyExpanded: true,
-            title: Text(
-              '${category['name']}',
-              style: const TextStyle(fontWeight: FontWeight.w900),
-            ),
-            subtitle: Text('${items.length} items'),
-            children: items.isEmpty
-                ? [
-                    const ListTile(
-                      title: Text('No menu items in this category'),
-                    ),
-                  ]
-                : items.map((value) {
-                    final item = value as Map;
-                    final imageUrl = '${item['image_url'] ?? ''}';
-                    final offer = item['discount_price'];
-                    return ListTile(
-                      leading: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: imageUrl.isEmpty
-                            ? const SizedBox.square(
-                                dimension: 58,
-                                child: ColoredBox(
-                                  color: Color(0xFFFFF1E8),
-                                  child: Icon(Icons.restaurant_menu_rounded),
+      const SizedBox(height: 16),
+      TextField(
+        controller: _catalogSearch,
+        decoration: const InputDecoration(
+          labelText: 'Search menu',
+          hintText: 'Dish, description or ingredient',
+          prefixIcon: Icon(Icons.search_rounded),
+        ),
+        onChanged: (value) => setState(() => _catalogQuery = value),
+      ),
+      const SizedBox(height: 12),
+      Wrap(
+        spacing: 8,
+        children: ['all', 'available', 'unavailable']
+            .map(
+              (value) => ChoiceChip(
+                label: Text(
+                  value == 'all'
+                      ? 'All items'
+                      : value == 'available'
+                      ? 'Available'
+                      : 'Unavailable',
+                ),
+                selected: _catalogAvailability == value,
+                onSelected: (_) => setState(() => _catalogAvailability = value),
+              ),
+            )
+            .toList(),
+      ),
+      if (!categories
+          .expand((category) => category['menu_items'] as List? ?? [])
+          .any(
+            (item) =>
+                menuMatches(item as Map, _catalogQuery, _catalogAvailability),
+          ))
+        _empty('No menu items match this search or availability filter.'),
+      ...categories
+          .where(
+            (category) =>
+                _catalogQuery.isEmpty && _catalogAvailability == 'all' ||
+                (category['menu_items'] as List? ?? []).any(
+                  (item) => menuMatches(
+                    item as Map,
+                    _catalogQuery,
+                    _catalogAvailability,
+                  ),
+                ),
+          )
+          .map((value) {
+            final category = value as Map;
+            final items = (category['menu_items'] as List? ?? [])
+                .where(
+                  (item) => menuMatches(
+                    item as Map,
+                    _catalogQuery,
+                    _catalogAvailability,
+                  ),
+                )
+                .toList();
+            return Card(
+              child: ExpansionTile(
+                initiallyExpanded: true,
+                title: Text(
+                  '${category['name']}',
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                subtitle: Text('${items.length} items'),
+                children: items.isEmpty
+                    ? [
+                        const ListTile(
+                          title: Text('No menu items in this category'),
+                        ),
+                      ]
+                    : items.map((value) {
+                        final item = value as Map;
+                        final imageUrl = '${item['image_url'] ?? ''}';
+                        final offer = item['discount_price'];
+                        return ListTile(
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: imageUrl.isEmpty
+                                ? const SizedBox.square(
+                                    dimension: 58,
+                                    child: ColoredBox(
+                                      color: Color(0xFFFFF1E8),
+                                      child: Icon(
+                                        Icons.restaurant_menu_rounded,
+                                      ),
+                                    ),
+                                  )
+                                : Image.network(
+                                    imageUrl,
+                                    width: 58,
+                                    height: 58,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        const SizedBox.square(
+                                          dimension: 58,
+                                          child: ColoredBox(
+                                            color: Color(0xFFFFF1E8),
+                                            child: Icon(
+                                              Icons.restaurant_menu_rounded,
+                                            ),
+                                          ),
+                                        ),
+                                  ),
+                          ),
+                          title: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${item['name']}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
-                              )
-                            : Image.network(
-                                imageUrl,
-                                width: 58,
-                                height: 58,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    const SizedBox.square(
-                                      dimension: 58,
-                                      child: ColoredBox(
-                                        color: Color(0xFFFFF1E8),
-                                        child: Icon(
-                                          Icons.restaurant_menu_rounded,
+                              ),
+                              if (item['is_bestseller'] == true)
+                                const Chip(label: Text('Bestseller')),
+                            ],
+                          ),
+                          subtitle: Text(
+                            '${item['short_description'] ?? item['description'] ?? 'No description'}\n₹${offer ?? item['price']} · ${item['food_type']} · ${item['spice_level'] ?? 'none'} · ${item['preparation_minutes'] ?? '—'} min',
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          isThreeLine: true,
+                          trailing: MediaQuery.sizeOf(context).width < 980
+                              ? PopupMenuButton<String>(
+                                  tooltip: 'Menu item actions',
+                                  onSelected: (action) =>
+                                      _catalogAction(action, item, categories),
+                                  itemBuilder: (_) => [
+                                    const PopupMenuItem(
+                                      value: 'photo',
+                                      child: Text('Upload item photo'),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'edit',
+                                      child: Text('Edit item'),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'toggle',
+                                      child: Text(
+                                        item['is_available'] == true
+                                            ? 'Mark unavailable'
+                                            : 'Mark available',
+                                      ),
+                                    ),
+                                    const PopupMenuDivider(),
+                                    const PopupMenuItem(
+                                      value: 'delete',
+                                      child: Text(
+                                        'Delete item',
+                                        style: TextStyle(
+                                          color: TablePlayColors.danger,
                                         ),
                                       ),
                                     ),
-                              ),
-                      ),
-                      title: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${item['name']}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                          if (item['is_bestseller'] == true)
-                            const Chip(label: Text('Bestseller')),
-                        ],
-                      ),
-                      subtitle: Text(
-                        '${item['short_description'] ?? item['description'] ?? 'No description'}\n₹${offer ?? item['price']} · ${item['food_type']} · ${item['spice_level'] ?? 'none'} · ${item['preparation_minutes'] ?? '—'} min',
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      isThreeLine: true,
-                      trailing: Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          IconButton(
-                            tooltip: 'Upload item photo',
-                            onPressed: () => _uploadMenuPhoto(item),
-                            icon: const Icon(
-                              Icons.add_photo_alternate_outlined,
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: 'Edit item',
-                            onPressed: () => _editMenuItem(item, categories),
-                            icon: const Icon(Icons.edit_outlined),
-                          ),
-                          Switch(
-                            value: item['is_available'] == true,
-                            onChanged: (_) => act(
-                              '/admin/menu-items/${item['id']}/toggle',
-                              success: 'Menu availability updated.',
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-          ),
-        );
-      }),
+                                  ],
+                                )
+                              : Wrap(
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: [
+                                    IconButton(
+                                      tooltip: 'Upload item photo',
+                                      onPressed: () => _uploadMenuPhoto(item),
+                                      icon: const Icon(
+                                        Icons.add_photo_alternate_outlined,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      tooltip: 'Edit item',
+                                      onPressed: () =>
+                                          _editMenuItem(item, categories),
+                                      icon: const Icon(Icons.edit_outlined),
+                                    ),
+                                    IconButton(
+                                      tooltip: 'Delete item',
+                                      onPressed: () async {
+                                        if (await confirm(
+                                          'Delete ${item['name']}?',
+                                          'This dish will be removed from the menu. Past orders and bills will be kept.',
+                                          action: 'Delete item',
+                                          danger: true,
+                                        )) {
+                                          await _delete(
+                                            '/admin/menu-items/${item['id']}',
+                                            'Menu item removed. Past orders and bills are preserved.',
+                                          );
+                                        }
+                                      },
+                                      icon: const Icon(
+                                        Icons.delete_outline_rounded,
+                                        color: TablePlayColors.danger,
+                                      ),
+                                    ),
+                                    Switch(
+                                      value: item['is_available'] == true,
+                                      onChanged: (_) => act(
+                                        '/admin/menu-items/${item['id']}/toggle',
+                                        success: 'Menu availability updated.',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        );
+                      }).toList(),
+              ),
+            );
+          }),
       if (_featureAllowed('games')) ...[
         _adminHeading('Game lounge', '${games.length} configured', [
           FilledButton.icon(
@@ -1647,6 +2023,32 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
           ),
         ),
     ]);
+  }
+
+  Future<void> _catalogAction(String action, Map item, List categories) async {
+    switch (action) {
+      case 'photo':
+        await _uploadMenuPhoto(item);
+      case 'edit':
+        await _editMenuItem(item, categories);
+      case 'toggle':
+        await act(
+          '/admin/menu-items/${item['id']}/toggle',
+          success: 'Menu availability updated.',
+        );
+      case 'delete':
+        if (await confirm(
+          'Delete ${item['name']}?',
+          'This dish will be removed from the menu. Past orders and bills will be kept.',
+          action: 'Delete item',
+          danger: true,
+        )) {
+          await _delete(
+            '/admin/menu-items/${item['id']}',
+            'Menu item removed. Past orders and bills are preserved.',
+          );
+        }
+    }
   }
 
   Widget _adminReports() {
@@ -3270,7 +3672,16 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
     }
   }
 
-  Widget _counter() {
+  Widget _counter({int? viewIndex}) {
+    final index = viewIndex ?? sectionIndex;
+    void select(int next) {
+      if (role == 'admin') {
+        setState(() => _operationsSection = next);
+      } else {
+        _selectSection(next);
+      }
+    }
+
     final orders = data['orders'] as List,
         sessions = data['sessions'] as List,
         requests = data['service_requests'] as List,
@@ -3295,33 +3706,56 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
             value: pendingOrders,
             icon: Icons.receipt_long_rounded,
             color: TablePlayColors.gold,
-            onTap: () => _selectSection(1),
+            onTap: () => select(1),
           ),
           PulseMetric(
             label: 'Guest requests',
             value: pendingRequests,
             icon: Icons.notifications_active_rounded,
             color: const Color(0xffff9b72),
-            onTap: () => _selectSection(2),
+            onTap: () => select(2),
           ),
           PulseMetric(
             label: 'Tables to settle',
             value: unpaidTables,
             icon: Icons.payments_rounded,
             color: const Color(0xff93c5fd),
-            onTap: () => _selectSection(3),
+            onTap: () => select(3),
           ),
           PulseMetric(
             label: 'Game timers',
             value: games.length,
             icon: Icons.sports_esports_rounded,
             color: const Color(0xffc4b5fd),
-            onTap: () => _selectSection(4),
+            onTap: () => select(4),
             countsTowardAttention: false,
           ),
         ],
       ),
-      if (sectionIndex == 0 || sectionIndex == 1) ...[
+      if (role == 'admin')
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final entry in {
+                0: 'All operations',
+                1: 'Orders',
+                2: 'Guest requests',
+                3: 'Billing',
+                4: 'Game timers',
+              }.entries)
+                if (entry.key != 4 || _featureAllowed('games'))
+                  ChoiceChip(
+                    label: Text(entry.value),
+                    selected: index == entry.key,
+                    onSelected: (_) => select(entry.key),
+                  ),
+            ],
+          ),
+        ),
+      if (index == 0 || index == 1) ...[
         SectionTitle(
           'Incoming orders',
           subtitle:
@@ -3332,7 +3766,7 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
         else
           ...orders.map((value) => _order(value as Map, counter: true)),
       ],
-      if (sectionIndex == 0 || sectionIndex == 2) ...[
+      if (index == 0 || index == 2) ...[
         SectionTitle('Guest requests', subtitle: '${requests.length} open'),
         if (requests.isEmpty)
           _empty('All guests attended')
@@ -3377,13 +3811,14 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
             );
           }),
       ],
-      if (sectionIndex == 0 || sectionIndex == 3) ...[
+      if (index == 0 || index == 3) ...[
         SectionTitle('Billing', subtitle: '${sessions.length} open tables'),
         if (sessions.isEmpty) _empty('No open tables to bill'),
         ...sessions.map((value) {
           final session = value as Map, bill = session['bill'];
           return Card(
             child: ListTile(
+              onTap: bill == null ? null : () => _billDetails(session),
               title: Text(
                 '${session['dining_table']['table_code']} · ${session['session_code']}',
                 style: const TextStyle(fontWeight: FontWeight.w800),
@@ -3439,7 +3874,7 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
           );
         }),
       ],
-      if (sectionIndex == 0 || sectionIndex == 4) ...[
+      if (_featureAllowed('games') && (index == 0 || index == 4)) ...[
         SectionTitle('Game timers', subtitle: '${games.length} active'),
         if (games.isEmpty) _empty('No active game timers'),
         ...games.map((value) {
@@ -3495,6 +3930,11 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
       ],
     ]);
   }
+
+  Future<void> _billDetails(Map session) => showDialog<void>(
+    context: context,
+    builder: (_) => BillDetailsDialog(session: session),
+  );
 
   Widget _kitchen() {
     final orders = data as List;

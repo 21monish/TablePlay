@@ -6,6 +6,18 @@
     <meta name="theme-color" content="#143c35">
     <meta name="description" content="TablePlay brings local-network ordering, staff operations, kitchen workflow, billing and table games together.">
     <title>TablePlay Portal &middot; Restaurant ordering, operations and play</title>
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="TablePlay - Restaurant service, connected">
+    <meta property="og:description" content="Ordering, kitchen workflow, staff operations and table entertainment. Start a 14-day restaurant trial.">
+    <meta property="og:url" content="{{ route('portal') }}">
+    <meta property="og:image" content="{{ url('/social-card.png') }}">
+    <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="website-canonical" content="{{ route('portal') }}">
+    <meta name="website-whatsapp" content="{{ config('website.whatsapp') }}">
+    <meta name="website-analytics" content="{{ config('website.analytics_id') }}">
+    <link rel="canonical" href="{{ route('portal') }}">
+    <link rel="stylesheet" href="/website.css"><script src="/website.js" defer></script>
     <link rel="icon" href="{{ route('brand.favicon',['v'=>$appSettings?->updated_at?->timestamp]) }}">
     @vite(['resources/css/app.css', 'resources/css/portal.css'])
 </head>
@@ -32,7 +44,8 @@
     </div>
 </header>
 
-<main id="main-content">
+<main id="main-content" tabindex="-1">
+    <x-public-tools />
     <section class="portal-hero">
         <div class="portal-hero__glow portal-hero__glow--one"></div>
         <div class="portal-hero__glow portal-hero__glow--two"></div>
@@ -218,6 +231,13 @@
         </div>
     </section>
 
+    <section class="portal-section" id="faq" tabindex="-1">
+        <div class="portal-shell"><h2>Questions before you start</h2>
+            <details><summary>Does TablePlay work without internet?</summary><p>Daily ordering runs on the restaurant LAN. Initial activation and periodic cloud licence verification need internet access.</p></details>
+            <details><summary>What is included in the trial?</summary><p>A 14-day trial supports up to three paired customer tablets. No payment card is needed to start.</p></details>
+            <details><summary>Can I keep my data when upgrading?</summary><p>Your restaurant setup and order history are preserved when your plan changes.</p></details>
+        </div>
+    </section>
     <section class="portal-section" id="support">
         <div class="portal-shell portal-support">
             <div class="portal-support__copy" data-portal-reveal>
@@ -225,6 +245,7 @@
                 <h2>Guidance stays close to the workflow</h2>
                 <p>Staff can use the built-in TablePlay Guide after login. Administrators can also review system health, application versions and restaurant configuration from one workspace.</p>
                 <div class="portal-support__actions">
+                    <a class="portal-button portal-button--primary" href="{{ route('contact') }}">Contact TablePlay</a>
                     <a class="portal-button portal-button--primary" href="{{ route('login') }}">Open staff login <x-icon name="arrow" :size="17" /></a>
                     <a class="portal-button portal-button--ghost" href="#installation">Installation guide</a>
                 </div>

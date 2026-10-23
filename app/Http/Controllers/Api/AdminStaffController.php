@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\MenuItemDeletionService;
 use App\Models\{AuditLog, Category, Device, DevicePairing, DiningTable, Game, MenuItem, Order, Payment, RestaurantSetting, Role, ServiceRequest, TableSession, User};
 use App\Services\{AuditService, DevicePairingService, EntitlementService, PublicAssetStorage, SystemHealthService};
 use Illuminate\Http\Request;
@@ -13,6 +14,11 @@ use Throwable;
 
 class AdminStaffController extends Controller
 {
+    public function destroyMenuItem(Request $request, MenuItem $menuItem, MenuItemDeletionService $items): array
+    {
+        return $items->delete($request, $menuItem, mobile: true);
+    }
+
     private function stats(): array
     {
         return [

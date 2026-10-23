@@ -134,7 +134,9 @@ class LocalLicenseService
             $this->invalid("The licence references an unknown plan ({$payload['plan']}). Update TablePlay before importing it.");
         }
 
-        $signedPayload = $this->withoutParsedDates($payload);
+        // Validation may normalize legacy claims. Never rewrite the actual
+        // signed document: the signature authenticates these original bytes.
+        $signedPayload = $envelope['payload'];
         $contentPayload = $signedPayload;
         unset($contentPayload['issued_at']);
         $contentHash = hash('sha256', $this->signatures->canonicalJson($contentPayload));
@@ -184,6 +186,10 @@ class LocalLicenseService
                     'fulfilled_at' => now(),
                     'fulfilled_revision' => $payload['license_revision'],
                 ]);
+            }
+            $state = app(EntitlementService::class)->state();
+            if (! $state['signature_valid'] || $state['license_reference'] !== $subscription->license_reference) {
+                $this->invalid('The stored licence could not be verified. Check the database date configuration and repair TablePlay before trying again.');
             }
             $this->log($locked->installation_uuid, 'local.license_import', 'success');
             return $subscription->fresh('plan');
@@ -300,14 +306,10 @@ class LocalLicenseService
 
     private function parseDate(string $value, string $field): Carbon
     {
-        try { return Carbon::parse($value); }
+        // Eloquent stores wall-clock values without an offset and reads them in
+        // the application timezone. Convert before storing, not after reading.
+        try { return Carbon::parse($value)->setTimezone((string) config('app.timezone', 'UTC')); }
         catch (\Throwable) { $this->invalid("The signed licence contains an invalid {$field} date."); }
-    }
-
-    private function withoutParsedDates(array $payload): array
-    {
-        unset($payload['_issued_at'], $payload['_starts_at'], $payload['_expires_at'], $payload['_subscription_expires_at'], $payload['_offline_verification_due_at'], $payload['_grace_ends_at']);
-        return $payload;
     }
 
     private function invalid(string $message): never

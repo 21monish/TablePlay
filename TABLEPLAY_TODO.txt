@@ -1,5 +1,86 @@
 TABLEPLAY CUSTOMER GROWTH AND FREE-TRIAL TODO
-Last updated: 2026-10-04
+Last updated: 2026-10-18
+
+======================================================================
+LATEST BATCH - SECURITY, APPS AND PORTS
+======================================================================
+
+Completed/tested code is recorded in docs/BATCH_UPDATE_RESULTS_2026-10-18.md:
+password recovery, immutable existing superadmin credentials, safe GET retries,
+native recovery, customer bill/request history, menu sorting and server pricing,
+new-install port selection and saved-port startup conflict detection.
+
+[ ] Review and deploy these source changes; verify a real reset email reaches
+    the registered inbox and a real contact enquiry reaches support.
+[ ] Sign Windows release candidates before publishing; keep unsigned files private.
+[ ] Test actual existing-install upgrades and coordinated port migration;
+    no running installation or saved app address was changed in this batch.
+[ ] Test new ports with XAMPP running and real Staff/Customer devices.
+[ ] Verify paid/online payment, domain-email and backup-provider choices before
+    implementing external account changes; no secrets should be sent in chat.
+
+======================================================================
+WEBSITE LAUNCH GATES - TARGET 19 OCTOBER 2026
+======================================================================
+
+Implemented public-site features and verification evidence are recorded in
+docs/WEBSITE_LAUNCH_RESULTS.md. Keep these unverified launch gates open:
+
+[ ] Verify Render reachability; remote requests timed out during testing.
+[ ] Deploy backend contact page first, then Vercel website changes; recheck
+    every live public link and HTTPS asset after deployment.
+[ ] Send one real, approved contact enquiry and verify inbox delivery/reply.
+[ ] Check Safari/iPhone and physical-phone interactions.
+[ ] Confirm deployed WhatsApp link and refreshed social preview.
+[ ] Create/configure GA4 after the owner supplies a public G- ID; keep
+    analytics disabled until configured and consent has been given.
+[ ] Verify Search Console ownership and submit the homepage sitemap.
+[ ] Set up domain email only after choosing an owned domain and provider.
+[ ] Enable appropriate cloud backups and verify an isolated restore;
+    do not change paid infrastructure without approval.
+[ ] Integrate and sandbox-test a payment provider before claiming online
+    checkout is available. Do not make real test charges.
+[ ] Complete final copy, privacy and commercial-offer approval before launch.
+
+======================================================================
+CURRENT PRIORITY - CUSTOMER / STAFF APPS AND LOCAL PORT COMPATIBILITY
+======================================================================
+
+Aim: Improve both native apps toward the relevant web application's
+design and workflows, and let TablePlay run alongside XAMPP projects
+without port conflicts, while preserving restaurant data and licences.
+
+[ ] Compare Customer and Staff screens with their corresponding web
+    workflows; identify missing features and prioritise useful parity.
+[ ] Improve Customer menu browsing, cart, order tracking, service requests,
+    billing and game-access screens where gaps are confirmed.
+[ ] Improve Staff role-specific dashboards, tables/devices, menu management,
+    order handling, billing, setup and licence screens where gaps remain.
+[ ] Keep responsive layouts, custom confirmation dialogs, password
+    visibility controls, validation and actionable connection errors
+    consistent across the apps; enforce permissions on the server.
+[ ] Inspect actual TablePlay and XAMPP listeners and startup configuration
+    to identify the conflicting service before changing any port.
+[ ] Check realtime and private database ports separately; change them only
+    if needed. Do not change XAMPP or unrelated project configuration.
+[ ] Propagate the selected port through the server manager, service launcher,
+    installer defaults, local URLs, Staff/Customer connection settings,
+    QR payloads, health checks and relevant firewall configuration.
+[ ] Provide a safe reconnect/migration path for saved app server addresses
+    and paired devices; never send saved credentials to an unverified server.
+[ ] Update setup documentation with the new local URL and LAN connection
+    steps. Phones/tablets must use the server's LAN address, not 127.0.0.1.
+[ ] Test TablePlay with XAMPP running: startup, restart, occupied-port
+    recovery, login, pairing, realtime updates and end-to-end ordering.
+[ ] Verify physical-device upgrade compatibility and actual Windows service
+    installation for the private 2.5.8 / Staff 1.11.1 / Customer 1.13.1 candidates.
+    Automated suites, package IDs, certificate identity and hashes already pass.
+[ ] Preserve restaurant data, licence verification and existing user changes.
+    Back up before modifying the installed runtime; do not reset the database.
+[ ] Keep unsigned Windows builds private until signed. Do not publish or
+    deploy cloud changes as part of this local app/port update.
+[ ] Record actual test results and remaining physical-device checks; remove
+    individual TODO items only after their implementation and tests pass.
 
 ======================================================================
 AIM
@@ -57,7 +138,6 @@ PHASE 2 - PUBLIC WEBSITE AND LEAD CAPTURE
 [ ] Add WhatsApp, Request a Callback and Contact Sales actions.
 [ ] Add real Staff App and Customer App screenshots.
 [ ] Explain cloud licensing versus local/offline restaurant operation.
-[ ] Create a server-side contact/lead form with validation and rate limits.
 [ ] Notify the sales/support owner when a qualified lead is submitted.
 
 ======================================================================

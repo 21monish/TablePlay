@@ -3,6 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tableplay_staff/core/session_store.dart';
 
 void main() {
+  test('fresh installs do not guess a server port', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = SessionStore(await SharedPreferences.getInstance());
+    expect(store.baseUrl, isEmpty);
+    expect(store.token, isNull);
+  });
   test(
     'staff login survives store recreation and clears only on logout',
     () async {

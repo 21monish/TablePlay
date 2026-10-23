@@ -105,9 +105,12 @@ class _LoginScreenState extends State<LoginScreen> {
         !uri.hasScheme ||
         !['http', 'https'].contains(uri.scheme) ||
         uri.host.isEmpty ||
+        uri.userInfo.isNotEmpty ||
+        uri.hasQuery ||
+        uri.hasFragment ||
         !uri.path.endsWith('/api/v1')) {
       throw const FormatException(
-        'Enter a valid API address ending in /api/v1, for example http://192.168.1.10:8000/api/v1.',
+        'Enter the API address shown by Server Manager, for example http://192.168.1.10:18740/api/v1. Do not include credentials or query parameters.',
       );
     }
     if (defaultTargetPlatform != TargetPlatform.windows &&
@@ -117,6 +120,55 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
     return baseUrl;
+  }
+
+  Future<void> passwordRecovery() async {
+    String? link;
+    try {
+      final uri = Uri.parse(_validatedBaseUrl(server.text));
+      link = uri.replace(path: '/forgot-password').toString();
+    } catch (_) {}
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Recover your staff password'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Open the recovery page on your restaurant server in a browser. Use your registered email. Internet and configured outgoing email are required to receive a reset link. For a missing email or forgotten PIN, contact your restaurant administrator.',
+              ),
+              if (link != null) ...[
+                const SizedBox(height: 16),
+                SelectableText(link),
+              ],
+              if (link == null)
+                const Padding(
+                  padding: EdgeInsets.only(top: 12),
+                  child: Text(
+                    'Enter the server address supplied by your administrator first.',
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          if (link != null)
+            TextButton(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: link!));
+              },
+              child: const Text('Copy recovery link'),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> testConnection({String? serverName}) async {
@@ -151,14 +203,18 @@ class _LoginScreenState extends State<LoginScreen> {
       final name = serverName ?? branding['restaurant_name'].toString();
       await widget.store.saveServer(baseUrl, serverName: name);
       if (mounted) {
-        setState(() => connectionMessage =
-            'Connected to $name. You can now sign in.');
+        setState(
+          () => connectionMessage = 'Connected to $name. You can now sign in.',
+        );
       }
     } catch (exception) {
       if (mounted) {
-        setState(() => error = exception
-            .toString()
-            .replaceFirst(RegExp(r'^(?:Exception|FormatException):\s*'), ''));
+        setState(
+          () => error = exception.toString().replaceFirst(
+            RegExp(r'^(?:Exception|FormatException):\s*'),
+            '',
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => busy = false);
@@ -176,16 +232,20 @@ class _LoginScreenState extends State<LoginScreen> {
           payload['version'] != 1 ||
           '${payload['server_id']}'.trim().isEmpty) {
         throw const FormatException(
-            'This is not a current TablePlay Staff connection QR.');
+          'This is not a current TablePlay Staff connection QR.',
+        );
       }
       server.text = _validatedBaseUrl('${payload['api_base_url']}');
       setState(() => showServer = true);
       await testConnection(serverName: '${payload['server_name']}');
     } catch (exception) {
       if (mounted) {
-        setState(() => error = exception
-            .toString()
-            .replaceFirst(RegExp(r'^(?:Exception|FormatException):\s*'), ''));
+        setState(
+          () => error = exception.toString().replaceFirst(
+            RegExp(r'^(?:Exception|FormatException):\s*'),
+            '',
+          ),
+        );
       }
     }
   }
@@ -463,6 +523,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           TextButton.icon(
+                            onPressed: busy ? null : passwordRecovery,
+                            icon: const Icon(Icons.lock_reset_rounded),
+                            label: const Text('Forgot password?'),
+                          ),
+                          TextButton.icon(
                             onPressed: () =>
                                 setState(() => showServer = !showServer),
                             icon: const Icon(Icons.lan_outlined, size: 18),
@@ -484,12 +549,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ],
                                   validator: (value) =>
                                       (value ?? '').trim().isEmpty
-                                          ? 'Enter the local server API address.'
-                                          : null,
+                                      ? 'Enter the local server API address.'
+                                      : null,
                                   decoration: const InputDecoration(
                                     labelText: 'API address',
-                                    hintText:
-                                        'http://192.168.1.10:8000/api/v1',
+                                    hintText: 'http://192.168.1.10:8000/api/v1',
                                     helperText:
                                         'Use localhost on this PC or the server IP on another device.',
                                     prefixIcon: Icon(Icons.dns_outlined),
@@ -500,10 +564,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                   children: [
                                     Expanded(
                                       child: OutlinedButton.icon(
-                                        onPressed:
-                                            busy ? null : testConnection,
+                                        onPressed: busy ? null : testConnection,
                                         icon: const Icon(
-                                            Icons.wifi_tethering_rounded),
+                                          Icons.wifi_tethering_rounded,
+                                        ),
                                         label: const Text('Test connection'),
                                       ),
                                     ),
@@ -584,47 +648,46 @@ class _StaffServerScannerPageState extends State<_StaffServerScannerPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          title: const Text('Scan Staff connection QR'),
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.white,
+    backgroundColor: Colors.black,
+    appBar: AppBar(
+      title: const Text('Scan Staff connection QR'),
+      backgroundColor: Colors.black,
+      foregroundColor: Colors.white,
+    ),
+    body: Stack(
+      children: [
+        MobileScanner(
+          onDetect: (capture) {
+            if (detected) return;
+            final value = capture.barcodes.firstOrNull?.rawValue;
+            if (value == null) return;
+            detected = true;
+            Navigator.pop(context, value);
+          },
         ),
-        body: Stack(
-          children: [
-            MobileScanner(onDetect: (capture) {
-              if (detected) return;
-              final value = capture.barcodes.firstOrNull?.rawValue;
-              if (value == null) return;
-              detected = true;
-              Navigator.pop(context, value);
-            }),
-            Center(
-              child: Container(
-                width: 260,
-                height: 260,
-                decoration: BoxDecoration(
-                  border: Border.all(color: TablePlayColors.accent, width: 3),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-              ),
+        Center(
+          child: Container(
+            width: 260,
+            height: 260,
+            decoration: BoxDecoration(
+              border: Border.all(color: TablePlayColors.accent, width: 3),
+              borderRadius: BorderRadius.circular(24),
             ),
-            const Positioned(
-              left: 24,
-              right: 24,
-              bottom: 42,
-              child: Text(
-                'Scan the Staff Connection QR from Admin Setup. This QR configures the server only and never assigns a table.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
-      );
+        const Positioned(
+          left: 24,
+          right: 24,
+          bottom: 42,
+          child: Text(
+            'Scan the Staff Connection QR from Admin Setup. This QR configures the server only and never assigns a table.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _RoleChip extends StatelessWidget {

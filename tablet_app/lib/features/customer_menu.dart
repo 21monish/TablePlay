@@ -29,6 +29,7 @@ class _CustomerMenuViewState extends State<CustomerMenuView> {
   final search = TextEditingController();
   String query = '';
   String filter = 'all';
+  String sort = 'menu';
   int? categoryId;
 
   @override
@@ -44,6 +45,9 @@ class _CustomerMenuViewState extends State<CustomerMenuView> {
       if (categoryId != null && category['id'] != categoryId) continue;
       for (final rawItem in category['menu_items'] as List? ?? []) {
         final item = Map<String, dynamic>.from(rawItem);
+        if (item['is_available'] == false || item['is_active'] == false) {
+          continue;
+        }
         item['_category_name'] = category['name'];
         final haystack =
             '${item['name']} ${item['description']} ${item['ingredients']}'
@@ -60,6 +64,25 @@ class _CustomerMenuViewState extends State<CustomerMenuView> {
         }
         result.add(item);
       }
+    }
+    double number(dynamic value) => double.tryParse('$value') ?? 0;
+    double price(Map item) => number(
+        item['effective_price'] ?? item['discount_price'] ?? item['price']);
+    if (sort != 'menu') {
+      result.sort((a, b) {
+        final comparison = switch (sort) {
+          'price_low' => price(a).compareTo(price(b)),
+          'price_high' => price(b).compareTo(price(a)),
+          'quick' => number(a['preparation_minutes'] ?? 999)
+              .compareTo(number(b['preparation_minutes'] ?? 999)),
+          _ => '${a['name']}'
+              .toLowerCase()
+              .compareTo('${b['name']}'.toLowerCase()),
+        };
+        return comparison != 0
+            ? comparison
+            : '${a['name']}'.compareTo('${b['name']}');
+      });
     }
     return result;
   }
@@ -123,7 +146,7 @@ class _CustomerMenuViewState extends State<CustomerMenuView> {
                   }),
                 ])),
             const SizedBox(height: 10),
-            Row(children: [
+            Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 6, children: [
               const Icon(Icons.restaurant_menu_rounded,
                   size: 15, color: TablePlayColors.muted),
               const SizedBox(width: 6),
@@ -133,7 +156,6 @@ class _CustomerMenuViewState extends State<CustomerMenuView> {
                       color: TablePlayColors.muted,
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700)),
-              const Spacer(),
               if (query.isNotEmpty || filter != 'all' || categoryId != null)
                 TextButton.icon(
                   onPressed: () => setState(() {
@@ -146,6 +168,29 @@ class _CustomerMenuViewState extends State<CustomerMenuView> {
                   label: const Text('Clear filters'),
                 ),
             ]),
+            Row(children: [
+              const Text('Sort', style: TextStyle(color: TablePlayColors.muted)),
+              const SizedBox(width: 12),
+              Expanded(child: DropdownButton<String>(
+                key: const Key('customer-menu-sort'),
+                value: sort,
+                isDense: true,
+                isExpanded: true,
+                items: const [
+                  DropdownMenuItem(value: 'menu', child: Text('Menu order')),
+                  DropdownMenuItem(
+                      value: 'price_low', child: Text('Price: low to high')),
+                  DropdownMenuItem(
+                      value: 'price_high', child: Text('Price: high to low')),
+                  DropdownMenuItem(
+                      value: 'quick', child: Text('Quickest preparation')),
+                  DropdownMenuItem(value: 'name', child: Text('Name: A to Z')),
+                ],
+                onChanged: (value) {
+                  if (value != null) setState(() => sort = value);
+                },
+              )),
+            ]),
           ]),
         ),
         Expanded(child: LayoutBuilder(builder: (context, constraints) {
@@ -157,7 +202,7 @@ class _CustomerMenuViewState extends State<CustomerMenuView> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: columns,
-                mainAxisExtent: 286,
+                mainAxisExtent: 326,
                 crossAxisSpacing: 14,
                 mainAxisSpacing: 14),
             itemCount: items.length,
