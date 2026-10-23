@@ -1,5 +1,5 @@
 TABLEPLAY CUSTOMER GROWTH AND FREE-TRIAL TODO
-Last updated: 2026-10-18
+Last updated: 2026-10-23
 
 ======================================================================
 LATEST BATCH - SECURITY, APPS AND PORTS
@@ -10,8 +10,12 @@ password recovery, immutable existing superadmin credentials, safe GET retries,
 native recovery, customer bill/request history, menu sorting and server pricing,
 new-install port selection and saved-port startup conflict detection.
 
-[ ] Review and deploy these source changes; verify a real reset email reaches
-    the registered inbox and a real contact enquiry reaches support.
+Source commit 22bdc7d was pushed and is live on Vercel and both Render services.
+Live recovery/contact emails arrived, confirmed by the owner. Deployment and
+verification evidence: docs/DEPLOYMENT_RESULTS_2026-10-23.md.
+
+[ ] Complete an owner-controlled password reset if needed and sign in; verify
+    authenticated licence status. Never send reset links/passwords in chat.
 [ ] Sign Windows release candidates before publishing; keep unsigned files private.
 [ ] Test actual existing-install upgrades and coordinated port migration;
     no running installation or saved app address was changed in this batch.
@@ -20,20 +24,19 @@ new-install port selection and saved-port startup conflict detection.
     implementing external account changes; no secrets should be sent in chat.
 
 ======================================================================
-WEBSITE LAUNCH GATES - TARGET 19 OCTOBER 2026
+WEBSITE LAUNCH GATES - POST-DEPLOYMENT ACCEPTANCE
 ======================================================================
 
 Implemented public-site features and verification evidence are recorded in
 docs/WEBSITE_LAUNCH_RESULTS.md. Keep these unverified launch gates open:
 
-[ ] Verify Render reachability; remote requests timed out during testing.
-[ ] Deploy backend contact page first, then Vercel website changes; recheck
-    every live public link and HTTPS asset after deployment.
-[ ] Send one real, approved contact enquiry and verify inbox delivery/reply.
+[ ] Verify support reply handling; the owner has confirmed contact and recovery
+    inbox delivery. Public HTTPS, visible links/assets and realtime handshake pass.
 [ ] Check Safari/iPhone and physical-phone interactions.
-[ ] Confirm deployed WhatsApp link and refreshed social preview.
-[ ] Create/configure GA4 after the owner supplies a public G- ID; keep
-    analytics disabled until configured and consent has been given.
+[ ] Refresh/check actual WhatsApp social preview caches; the approved WhatsApp
+    link and unauthenticated social PNG already pass live checks.
+[ ] Keep GA4 disabled as requested; configure only if the owner later chooses
+    analytics and supplies a public G- ID, with consent/CSP verification.
 [ ] Verify Search Console ownership and submit the homepage sitemap.
 [ ] Set up domain email only after choosing an owned domain and provider.
 [ ] Enable appropriate cloud backups and verify an isolated restore;
@@ -77,8 +80,8 @@ without port conflicts, while preserving restaurant data and licences.
     Automated suites, package IDs, certificate identity and hashes already pass.
 [ ] Preserve restaurant data, licence verification and existing user changes.
     Back up before modifying the installed runtime; do not reset the database.
-[ ] Keep unsigned Windows builds private until signed. Do not publish or
-    deploy cloud changes as part of this local app/port update.
+[ ] Keep unsigned Windows builds private until signed. Cloud source was deployed
+    separately on 23 October at the owner's request; local binaries remain private.
 [ ] Record actual test results and remaining physical-device checks; remove
     individual TODO items only after their implementation and tests pass.
 
