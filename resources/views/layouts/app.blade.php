@@ -20,19 +20,19 @@
 @else
     <div class="app-shell" data-app-shell>
         <div class="sidebar-scrim" data-sidebar-close></div>
-        <aside class="sidebar" aria-label="Primary navigation">
+        <aside class="sidebar {{ auth()->user()->hasRole('superadmin') ? 'sidebar--platform' : '' }}" aria-label="Primary navigation">
             <div class="sidebar__brand">
                 <a href="/"><x-brand light /></a>
                 <button class="icon-button sidebar__close" type="button" data-sidebar-close aria-label="Close menu"><x-icon name="close" /></button>
             </div>
             <nav class="sidebar__nav">
                 @if(auth()->user()->hasRole('superadmin'))
-                    <span class="nav-label">Platform</span>
-                    <a class="nav-link {{ request()->routeIs('superadmin.*') ? 'active' : '' }}" href="{{ route('superadmin.index') }}"><x-icon name="license" /><span>Command center</span></a>
+                    @include('superadmin._sidebar')
                 @endif
                 @if(auth()->user()->hasRole('restaurant_owner'))
                     <span class="nav-label">Restaurant account</span>
-                    <a class="nav-link {{ request()->routeIs('account.*') ? 'active' : '' }}" href="{{ route('account.index') }}"><x-icon name="setup" /><span>Trial onboarding</span></a>
+                    <a class="nav-link {{ request()->routeIs('account.index') ? 'active' : '' }}" href="{{ route('account.index') }}"><x-icon name="setup" /><span>Trial onboarding</span></a>
+                    <a class="nav-link {{ request()->routeIs('account.financial-reports.*') ? 'active' : '' }}" href="{{ route('account.financial-reports.index') }}"><x-icon name="report" /><span>Monthly financial reports</span></a>
                     <a class="nav-link" href="{{ route('privacy') }}"><x-icon name="license" /><span>Privacy policy</span></a>
                     <a class="nav-link" href="{{ route('terms') }}"><x-icon name="report" /><span>Terms of service</span></a>
                 @endif

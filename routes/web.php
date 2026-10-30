@@ -46,11 +46,21 @@ Route::middleware('auth')->group(function () {
 Route::post('/help/chat', [HelpController::class, 'chat'])->middleware(['auth', 'throttle:60,1'])->name('help.chat');
 Route::prefix('account')->name('account.')->middleware(['auth', 'privileged.verified', 'role:restaurant_owner'])->group(function () {
     Route::get('/', [RestaurantAccountController::class, 'index'])->name('index');
+    Route::get('financial-reports', [\App\Http\Controllers\Web\RestaurantFinancialReportController::class, 'index'])->name('financial-reports.index');
+    Route::post('financial-reports', [\App\Http\Controllers\Web\RestaurantFinancialReportController::class, 'store'])->middleware('throttle:20,1')->name('financial-reports.store');
     Route::get('/installer', [RestaurantAccountController::class, 'downloadInstaller'])->middleware('throttle:5,1')->name('installer.download');
     Route::post('/activation-key', [RestaurantAccountController::class, 'issueActivationKey'])->middleware('throttle:3,10')->name('activation-key');
 });
 Route::prefix('superadmin')->name('superadmin.')->middleware(['auth', 'privileged.verified', 'role:superadmin'])->group(function () {
     Route::get('/', [SuperAdminController::class, 'index'])->name('index');
+    Route::get('overview', [\App\Http\Controllers\Web\PlatformOverviewController::class, 'index'])->name('overview');
+    Route::get('users', [\App\Http\Controllers\Web\PlatformOverviewController::class, 'users'])->name('users');
+    Route::get('restaurants', [\App\Http\Controllers\Web\PlatformOverviewController::class, 'restaurants'])->name('restaurants');
+    Route::get('invoices', [\App\Http\Controllers\Web\PlatformOperationsController::class, 'invoices'])->name('invoices');
+    Route::get('payments', [\App\Http\Controllers\Web\PlatformOperationsController::class, 'payments'])->name('payments');
+    Route::get('renewals', [\App\Http\Controllers\Web\PlatformOperationsController::class, 'renewals'])->name('renewals');
+    Route::get('installations', [\App\Http\Controllers\Web\PlatformOperationsController::class, 'installations'])->name('installations');
+    Route::get('activity', [\App\Http\Controllers\Web\PlatformOperationsController::class, 'activity'])->name('activity');
     Route::post('plans', [SuperAdminController::class, 'storePlan'])->name('plans.store');
     Route::put('plans/{plan}', [SuperAdminController::class, 'updatePlan'])->name('plans.update');
     Route::post('plans/{plan}/toggle', [SuperAdminController::class, 'togglePlan'])->name('plans.toggle');

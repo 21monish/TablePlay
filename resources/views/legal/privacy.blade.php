@@ -2,6 +2,8 @@
 
 @section('title', 'Privacy Policy')
 @section('heading', 'Privacy Policy')
+@section('policy-updated-date', '2026-10-30')
+@section('policy-updated-label', '30 October 2026')
 
 @section('content')
 <p class="legal-intro">This policy explains how TablePlay handles information when you use its restaurant-management platform, local applications, website, and account services.</p>
@@ -19,6 +21,11 @@
 <section class="legal-section">
     <h2>How information is used</h2>
     <p>We use information to provide and secure TablePlay, authenticate users, operate licences and subscriptions, deliver service messages, diagnose errors, and support restaurant operations. We do not sell personal information.</p>
+</section>
+
+<section class="legal-section">
+    <h2>Optional restaurant financial summaries</h2>
+    <p>Restaurant owners can choose to submit monthly net sales, expenses, currency and notes to TablePlay Cloud. Submission requires confirmation that these totals will be shared with TablePlay Super Admin for account and performance reporting. These are manual, owner-reported summaries, not audited accounts. This feature does not automatically upload local orders, bills, customer records or staff credentials. Owners can correct a report from their account; revisions are retained in the platform audit history.</p>
 </section>
 
 <section class="legal-section">

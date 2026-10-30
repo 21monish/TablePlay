@@ -1,0 +1,37 @@
+@extends('layouts.app')
+@section('title', $title)
+@section('eyebrow', 'TablePlay Super Admin')
+@section('page-title', $title)
+@section('content')
+<div class="page-heading"><div><h2>{{ $title }}</h2><p>{{ $description }}</p></div><a class="button button--secondary" href="{{ route('superadmin.cloud.index') }}">Customer workspace</a></div>
+<section class="card"><form class="card__body form-grid" method="get" action="{{ route('superadmin.'.$section) }}">
+    <label class="field">Search<input type="search" name="q" maxlength="100" value="{{ request('q') }}" placeholder="{{ $section === 'activity' ? 'Action or actor name' : ($section === 'installations' ? 'Restaurant or device name' : 'Restaurant or record number') }}"></label>
+    @if(count($statuses))<label class="field">Recorded status<select name="status"><option value="">All statuses</option>@foreach($statuses as $status)<option value="{{ $status }}" @selected(request('status') === $status)>{{ ucfirst($status) }}</option>@endforeach</select></label>@endif
+    @if($section === 'renewals')<label class="field">Expiry window<select name="window">@foreach(['7' => 'Next 7 days', '30' => 'Next 30 days', '90' => 'Next 90 days', 'overdue' => 'Already expired', 'all' => 'All dated expiries'] as $value => $label)<option value="{{ $value }}" @selected((request('window') ?: '30') === (string) $value)>{{ $label }}</option>@endforeach</select></label>@endif
+    <div class="form-actions"><button class="button" type="submit">Apply filters</button><a class="button button--secondary" href="{{ route('superadmin.'.$section) }}">Reset</a></div>
+</form></section>
+<section class="card" style="margin-top:20px"><div class="card__header"><h2>{{ number_format($records->total()) }} matching records</h2><span class="status-badge">Read-only</span></div><div class="table-wrap"><table class="data-table data-table--responsive">
+@switch($section)
+@case('invoices')
+<thead><tr><th>Invoice / restaurant</th><th>Status</th><th>Total</th><th>Unpaid balance</th><th>Due date</th><th>Details</th></tr></thead><tbody>
+@forelse($records as $invoice)<tr><td><span class="table-primary"><strong>{{ $invoice->invoice_number }}</strong><small>{{ $invoice->restaurant?->name ?? 'Unavailable restaurant' }}</small></span></td><td data-label="Status"><x-status :value="$invoice->status" /></td><td data-label="Total">{{ $invoice->currency }} {{ number_format((float) $invoice->total, 2) }}</td><td data-label="Unpaid balance">@if(in_array($invoice->status, ['void', 'draft'])) &mdash; @else{{ $invoice->currency }} {{ number_format(max(0, (float) $invoice->total - (float) $invoice->received), 2) }}@endif</td><td data-label="Due date">{{ $invoice->due_on?->format('d M Y') ?? 'Not set' }}</td><td data-label="Details"><a class="button button--secondary button--small" href="{{ route('superadmin.cloud.invoices.show', $invoice) }}">View invoice</a></td></tr>@empty<tr><td colspan="6">No invoices match these filters.</td></tr>@endforelse
+</tbody>@break
+@case('payments')
+<thead><tr><th>Payment / restaurant</th><th>Amount</th><th>Method</th><th>Status</th><th>Paid / refunded</th><th>Invoice</th></tr></thead><tbody>
+@forelse($records as $payment)<tr><td><span class="table-primary"><strong>{{ $payment->payment_number }}</strong><small>{{ $payment->restaurant?->name ?? 'Unavailable restaurant' }}</small></span></td><td data-label="Amount">{{ $payment->invoice?->currency ?? 'Unassigned currency' }} {{ number_format((float) $payment->amount, 2) }}</td><td data-label="Method">{{ strtoupper($payment->method) }}</td><td data-label="Status"><x-status :value="$payment->status" /></td><td data-label="Paid / refunded"><span class="table-primary"><strong>{{ $payment->paid_at?->format('d M Y H:i') }}</strong>@if($payment->refunded_at)<small>Refunded {{ $payment->refunded_at->format('d M Y H:i') }}</small>@endif</span></td><td data-label="Invoice">@if($payment->invoice)<a href="{{ route('superadmin.cloud.invoices.show', $payment->invoice) }}">{{ $payment->invoice->invoice_number }}</a>@else Unallocated @endif</td></tr>@empty<tr><td colspan="6">No payments match these filters.</td></tr>@endforelse
+</tbody>@break
+@case('renewals')
+<thead><tr><th>Restaurant</th><th>Plan</th><th>Recorded status</th><th>Subscription expiry</th><th>Review</th></tr></thead><tbody>
+@forelse($records as $subscription)<tr><td><span class="table-primary"><strong>{{ $subscription->restaurant?->name ?? 'Unavailable restaurant' }}</strong><small>Account: {{ $subscription->restaurant?->status ?? 'unknown' }}</small></span></td><td data-label="Plan">{{ $subscription->plan?->name ?? 'Unavailable plan' }}</td><td data-label="Recorded status"><x-status :value="$subscription->status" /></td><td data-label="Subscription expiry"><span class="table-primary"><strong>{{ $subscription->expires_at->format('d M Y H:i') }}</strong><small>{{ $subscription->expires_at->isPast() ? 'Expiry date has passed' : 'Upcoming expiry' }}</small></span></td><td data-label="Review">@if($subscription->restaurant)<a class="button button--secondary button--small" href="{{ route('superadmin.cloud.index', ['q' => $subscription->restaurant->name]) }}#customers">Review customer</a>@endif</td></tr>@empty<tr><td colspan="5">No subscriptions match this expiry window.</td></tr>@endforelse
+</tbody>@break
+@case('installations')
+<thead><tr><th>Server / restaurant</th><th>Plan</th><th>Activation status</th><th>Version</th><th>Last contact</th><th>Review</th></tr></thead><tbody>
+@forelse($records as $installation)<tr><td><span class="table-primary"><strong>{{ $installation->device_name }}</strong><small>{{ $installation->subscription?->restaurant?->name ?? 'Unavailable restaurant' }}</small><small>{{ $installation->installation_uuid }}</small></span></td><td data-label="Plan">{{ $installation->subscription?->plan?->name ?? 'Unavailable plan' }}</td><td data-label="Activation status"><x-status :value="$installation->status" /></td><td data-label="Version">{{ $installation->server_version ?: 'Not reported' }}</td><td data-label="Last contact">{{ $installation->last_seen_at?->format('d M Y H:i') ?? 'Never recorded' }}</td><td data-label="Review">@if($installation->subscription?->restaurant)<a class="button button--secondary button--small" href="{{ route('superadmin.cloud.index', ['q' => $installation->subscription->restaurant->name]) }}#cloud-installations">Review installation</a>@endif</td></tr>@empty<tr><td colspan="6">No server installations match these filters.</td></tr>@endforelse
+</tbody>@break
+@case('activity')
+<thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Record type</th><th>Record ID</th></tr></thead><tbody>
+@forelse($records as $event)<tr><td>{{ $event->created_at?->format('d M Y H:i:s') }}</td><td data-label="Actor">{{ $event->user?->name ?? 'System / device / unavailable actor' }}@if($event->user?->trashed())<small> (deleted account)</small>@endif</td><td data-label="Action">{{ $event->action }}</td><td data-label="Record type">{{ $event->entity_type ? class_basename($event->entity_type) : 'Not specified' }}</td><td data-label="Record ID">{{ $event->entity_id ?? '—' }}</td></tr>@empty<tr><td colspan="5">No activity matches these filters.</td></tr>@endforelse
+</tbody>@break
+@endswitch
+</table></div><div class="card__body">@include('superadmin._pagination', ['records' => $records, 'label' => $title])<p class="subtle">Times use {{ config('app.timezone') }}. Opening or filtering these lists does not change any account, subscription or financial record.</p></div></section>
+@endsection

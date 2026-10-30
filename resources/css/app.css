@@ -88,6 +88,11 @@ img, svg { display: block; }
 .nav-link--locked em { margin-left: auto; padding: 3px 6px; border: 1px solid rgba(245,189,98,.28); border-radius: 999px; color: var(--brand-gold); font-size: 8px; font-style: normal; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 .nav-link--button { width: 100%; }
 .sidebar__footer { display: grid; gap: 10px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.1); }
+.sidebar--platform { overflow: hidden; }
+.sidebar--platform .sidebar__brand, .sidebar--platform .sidebar__footer { flex-shrink: 0; }
+.sidebar--platform .sidebar__nav { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 18px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.25) transparent; }
+.sidebar-nav-group { display: flex; flex-direction: column; gap: 4px; }
+.sidebar-nav-group + .sidebar-nav-group { margin-top: 16px; }
 .network-chip { display: flex; align-items: center; gap: 8px; padding: 8px 11px; border-radius: 10px; background: rgba(255,255,255,.06); color: rgba(255,255,255,.65); font-size: 11px; }
 .network-chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--warning); box-shadow: 0 0 0 3px rgba(245,189,98,.12); }
 .network-chip.connected i { background: #4fd19b; box-shadow: 0 0 0 3px rgba(79,209,155,.12); }

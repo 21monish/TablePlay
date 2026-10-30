@@ -37,4 +37,14 @@ class CloudRestaurant extends Model
     {
         return $this->hasMany(CloudPayment::class);
     }
+
+    public function currentSubscription()
+    {
+        return $this->hasOne(CloudSubscription::class)->latestOfMany();
+    }
+
+    public function financialReports()
+    {
+        return $this->hasMany(CloudRestaurantFinancialReport::class);
+    }
 }

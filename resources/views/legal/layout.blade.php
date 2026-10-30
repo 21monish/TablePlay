@@ -22,7 +22,7 @@
     <article class="legal-card">
         <p class="legal-eyebrow">TablePlay legal</p>
         <h1>@yield('heading')</h1>
-        <small class="legal-updated">Last updated: <time datetime="2026-10-18">18 October 2026</time></small>
+        <small class="legal-updated">Last updated: <time datetime="@yield('policy-updated-date', '2026-10-18')">@yield('policy-updated-label', '18 October 2026')</time></small>
         @yield('content')
     </article>
 </main>

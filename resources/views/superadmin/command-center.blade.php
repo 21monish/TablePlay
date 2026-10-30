@@ -3,6 +3,7 @@
 @section('eyebrow', 'TablePlay Super Admin')
 @section('page-title', 'Platform Command Center')
 @section('content')
+<div class="page-heading"><div><h2>Platform management</h2><p>View cloud users, restaurant accounts and reported financial performance.</p></div><div class="page-heading__actions"><a class="button" href="{{ route('superadmin.overview') }}">Platform overview</a><a class="button button--secondary" href="{{ route('superadmin.users') }}">Users</a><a class="button button--secondary" href="{{ route('superadmin.restaurants') }}">Restaurants &amp; profits</a></div></div>
 <section class="superadmin-hero"><div><span class="superadmin-kicker"><x-icon name="license" size="15" /> Commercial operations</span><h2>Plans, licenses and growth in one place.</h2><p>Create offers, control availability, activate restaurant licenses and protect every subscription record.</p></div><div class="page-heading__actions"><button class="button button--accent" type="button" data-dialog-open="create-plan-dialog"><x-icon name="plus" size="17" /> New plan</button><a class="button button--secondary" href="{{ route('superadmin.cloud.index') }}"><x-icon name="team" size="16" /> Restaurant customers</a></div></section>
 
 <div class="stats-grid superadmin-stats">
