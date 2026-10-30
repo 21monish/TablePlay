@@ -142,7 +142,7 @@ class CloudManagementController extends Controller
         $this->ensureCloud();
         $data = $request->validate(['commercial_plan_id' => ['required', 'exists:commercial_plans,id'], 'duration_days' => ['required', 'integer', 'min:1', 'max:3650']]);
         $old = $subscription->toArray(); $oldPlan = (int) $subscription->commercial_plan_id; $newPlan = (int) $data['commercial_plan_id'];
-        $starts = now(); $expires = $starts->copy()->addDays($data['duration_days']);
+        $starts = now(); $expires = $starts->copy()->addDays((int) $data['duration_days']);
         $subscription->update([
             'commercial_plan_id' => $data['commercial_plan_id'], 'status' => 'active',
             'starts_at' => $starts, 'expires_at' => $expires, 'grace_ends_at' => $expires->copy()->addDays(7),

@@ -53,6 +53,70 @@ class CloudCommercialOperationsTest extends TestCase
         $this->assertDatabaseHas('cloud_subscription_events', ['cloud_subscription_id'=>$subscription->id,'to_status'=>'suspended','reason'=>'Payment overdue']);
     }
 
+    public function test_browser_renewal_accepts_string_duration_and_saves_dates_key_and_event(): void
+    {
+        $this->travelTo(now()->startOfSecond());
+        $admin = $this->superadmin();
+
+        foreach (['365', '1', '3650'] as $duration) {
+            [, $subscription] = $this->restaurantWithSubscription();
+            $subscription->update([
+                'status' => 'expired',
+                'expires_at' => now()->subDays(14),
+                'grace_ends_at' => now()->subDays(7),
+            ]);
+            $revision = (int) $subscription->fresh()->license_revision;
+            $expires = now()->addDays((int) $duration);
+
+            $response = $this->actingAs($admin)->from(route('superadmin.cloud.index'))
+                ->post(route('superadmin.cloud.subscriptions.renew', $subscription), [
+                    'commercial_plan_id' => (string) $subscription->commercial_plan_id,
+                    'duration_days' => $duration,
+                    'reason' => 'Approved customer renewal',
+                ]);
+
+            $response->assertRedirect(route('superadmin.cloud.index'))
+                ->assertSessionHasNoErrors()->assertSessionHas('status')
+                ->assertSessionHas('issued_license_key');
+            $renewed = $subscription->fresh();
+            $this->assertSame('active', $renewed->status);
+            $this->assertTrue($renewed->starts_at->equalTo(now()));
+            $this->assertTrue($renewed->expires_at->equalTo($expires));
+            $this->assertTrue($renewed->grace_ends_at->equalTo($expires->copy()->addDays(7)));
+            $this->assertSame($revision + 1, $renewed->license_revision);
+            $this->assertSame(1, $renewed->licenseKeys()->count());
+            $this->assertTrue($renewed->licenseKeys()->firstOrFail()->expires_at->equalTo($renewed->grace_ends_at));
+            $this->assertSame(0, $renewed->installations()->count());
+            $this->assertDatabaseHas('cloud_subscription_events', [
+                'cloud_subscription_id' => $subscription->id,
+                'event' => 'renewed', 'from_status' => 'expired', 'to_status' => 'active',
+                'reason' => 'Approved customer renewal', 'created_by' => $admin->id,
+            ]);
+            $this->assertDatabaseHas('audit_logs', [
+                'action' => 'cloud_subscription.renewed', 'entity_id' => $subscription->id,
+            ]);
+        }
+    }
+
+    public function test_browser_renewal_rejects_invalid_duration_without_changing_subscription(): void
+    {
+        [, $subscription] = $this->restaurantWithSubscription();
+        $admin = $this->superadmin();
+        $before = $subscription->fresh()->getAttributes();
+
+        foreach (['0', '3651', '1.5', 'not-a-number', '', null] as $duration) {
+            $this->actingAs($admin)->post(route('superadmin.cloud.subscriptions.renew', $subscription), [
+                'commercial_plan_id' => (string) $subscription->commercial_plan_id,
+                'duration_days' => $duration,
+            ])->assertRedirect()->assertSessionHasErrors('duration_days');
+
+            $this->assertSame($before, $subscription->fresh()->getAttributes());
+            $this->assertSame(0, $subscription->licenseKeys()->count());
+            $this->assertSame(0, $subscription->events()->count());
+            $this->assertDatabaseMissing('audit_logs', ['action' => 'cloud_subscription.renewed']);
+        }
+    }
+
     public function test_invoice_and_payment_are_recorded_and_invoice_becomes_paid(): void
     {
         [$restaurant,$subscription] = $this->restaurantWithSubscription();
