@@ -18,7 +18,7 @@
 
 @if($reminders->isNotEmpty())<section class="card renewal-reminders"><div class="card__header"><div><h2>Renewal reminders</h2><p>Created automatically at 30, 14, 7 and 1 day before expiry</p></div><span class="status-badge status-badge--warning"><i></i>{{ $reminders->count() }} recent</span></div><div class="card__body"><div class="feature-list">@foreach($reminders as $reminder)<span class="feature-pill">{{ $reminder->subscription->restaurant->name }} · {{ $reminder->days_before_expiry }} days</span>@endforeach</div></div></section>@endif
 
-<div class="customer-grid">
+<div class="customer-grid" id="customers">
 @forelse($restaurants as $restaurant)
 @php($subscription = $restaurant->subscriptions->first())
 <article class="customer-card">
@@ -30,15 +30,27 @@
 @empty<div class="empty-state cloud-empty"><span class="empty-state__icon"><x-icon name="team" size="26" /></span><strong>{{ request()->hasAny(['q','status','plan_id','subscription_status','renewal_days','health']) ? 'No customers match these filters' : 'Add your first restaurant customer' }}</strong><p>{{ request()->hasAny(['q','status','plan_id','subscription_status','renewal_days','health']) ? 'Try resetting one or more filters to expand the results.' : 'Create a customer, choose a plan and issue the first secure activation key.' }}</p>@if(request()->hasAny(['q','status','plan_id','subscription_status','renewal_days','health']))<a class="button button--secondary button--small" href="{{ route('superadmin.cloud.index') }}">Clear all filters</a>@else<button class="button button--accent button--small" type="button" data-dialog-open="new-customer"><x-icon name="plus" size="15" /> Add first customer</button>@endif</div>@endforelse
 </div>
 
+@if($restaurants->hasPages())
+<nav class="card" aria-label="Customer pages">
+    <div class="card__body form-actions">
+        @if($restaurants->previousPageUrl())<a class="button button--secondary button--small" rel="prev" href="{{ $restaurants->previousPageUrl() }}">Previous</a>@endif
+        <span aria-current="page">Page {{ $restaurants->currentPage() }} of {{ $restaurants->lastPage() }} &middot; {{ $restaurants->total() }} matching customers</span>
+        @if($restaurants->nextPageUrl())<a class="button button--secondary button--small" rel="next" href="{{ $restaurants->nextPageUrl() }}">Next</a>@endif
+    </div>
+</nav>
+@endif
+
+@php($restaurantsById = $restaurants->getCollection()->keyBy('id'))
+@php($subscriptionsById = $restaurants->getCollection()->flatMap(fn ($restaurant) => $restaurant->subscriptions)->keyBy('id'))
 <section class="card" style="margin-top:18px">
-    <div class="card__header"><div><h2>Server installations</h2><p>Transfer access to a replacement server without renewing the subscription or changing restaurant data.</p></div></div>
+    <div class="card__header"><div><h2>Server installations</h2><p>For customers on this page. Transfer access to a replacement server without renewing the subscription or changing restaurant data.</p></div></div>
     <div class="table-wrap"><table class="data-table data-table--responsive">
         <thead><tr><th>Restaurant / plan</th><th>Server identity</th><th>Status</th><th>Subscription expires</th><th>Action</th></tr></thead>
         <tbody>
-        @forelse($restaurants->flatMap(fn ($restaurant) => $restaurant->subscriptions)->flatMap(fn ($subscription) => $subscription->installations) as $installation)
-            @php($installationSubscription = $restaurants->flatMap(fn ($restaurant) => $restaurant->subscriptions)->firstWhere('id', $installation->cloud_subscription_id))
+        @forelse($subscriptionsById->flatMap(fn ($subscription) => $subscription->installations) as $installation)
+            @php($installationSubscription = $subscriptionsById->get($installation->cloud_subscription_id))
             <tr>
-                <td data-label="Restaurant / plan">{{ $restaurants->firstWhere('id', $installationSubscription->cloud_restaurant_id)->name }}<br><small>{{ $installationSubscription->plan->name }}</small></td>
+                <td data-label="Restaurant / plan">{{ $restaurantsById->get($installationSubscription->cloud_restaurant_id)->name }}<br><small>{{ $installationSubscription->plan->name }}</small></td>
                 <td data-label="Server identity"><strong>{{ $installation->device_name }}</strong><br><small>{{ $installation->installation_uuid }}</small></td>
                 <td data-label="Status"><x-status :value="$installation->status" /></td>
                 <td data-label="Subscription expires">{{ $installationSubscription->expires_at?->format('d M Y') ?? 'No expiry' }}</td>

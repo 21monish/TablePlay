@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Models\{CloudCommercialSetting, CloudInstallation, CloudInvoice, CloudOfflineActivationRequest, CloudPayment, CloudRenewalReminder, CloudRestaurant, CloudSubscription, CloudSubscriptionEvent, CommercialPlan, LicenseSyncLog};
+use App\Models\{CloudCommercialSetting, CloudInstallation, CloudInvoice, CloudOfflineActivationRequest, CloudPayment, CloudRenewalReminder, CloudRestaurant, CloudSubscription, CloudSubscriptionEvent, CommercialPlan};
 use App\Services\{AuditService, CloudLicenseService, LicenseSignatureService};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,8 +17,8 @@ class CloudManagementController extends Controller
         $this->ensureCloud();
         $restaurants = CloudRestaurant::query()
             ->with([
-                'subscriptions' => fn ($query) => $query->with(['plan', 'scheduledPlan', 'installations', 'events' => fn ($events) => $events->with(['fromPlan', 'toPlan', 'user'])->latest()])->latest(),
-                'invoices' => fn ($query) => $query->with('payments')->latest('issued_on'),
+                'subscriptions' => fn ($query) => $query->with(['plan', 'scheduledPlan', 'installations', 'events' => fn ($events) => $events->latest()->orderByDesc('id')->limit(8)])->latest(),
+                'invoices' => fn ($query) => $query->latest('issued_on'),
                 'payments' => fn ($query) => $query->latest('paid_at'),
             ])
             ->when($request->filled('q'), fn ($query) => $query->where(function ($inner) use ($request) {
@@ -32,19 +32,18 @@ class CloudManagementController extends Controller
             ->when($request->input('health') === 'attention', fn ($query) => $query->where(function ($health) {
                 $health->where('status','!=','active')->orWhereHas('subscriptions', fn ($subscriptions) => $subscriptions->whereIn('status',['grace','suspended','expired'])->orWhere('expires_at','<=',now()->addDays(7)));
             }))
-            ->latest()
-            ->get();
+            ->latest()->orderByDesc('id')
+            ->paginate(20)->withQueryString()->fragment('customers');
 
         $commercialSettings = CloudCommercialSetting::firstOrCreate([], ['legal_name'=>'TablePlay','currency'=>'INR','invoice_prefix'=>'TP-INV']);
 
         return view('superadmin.cloud-operations', [
             'restaurants' => $restaurants,
             'plans' => CommercialPlan::where('is_active', true)->orderBy('sort_order')->get(),
-            'syncLogs' => LicenseSyncLog::latest()->limit(30)->get(),
             'signingReady' => $signatures->signingReady(),
             'commercialSettings' => $commercialSettings,
-            'reminders' => CloudRenewalReminder::with('subscription.restaurant','subscription.plan')->latest('created_at')->limit(20)->get(),
-            'offlineRequests' => CloudOfflineActivationRequest::with(['subscription.restaurant', 'subscription.plan', 'installation', 'issuer'])->latest('imported_at')->limit(30)->get(),
+            'reminders' => CloudRenewalReminder::with('subscription.restaurant')->latest('created_at')->limit(20)->get(),
+            'offlineRequests' => CloudOfflineActivationRequest::with(['subscription.restaurant', 'subscription.plan', 'issuer'])->latest('imported_at')->limit(30)->get(),
             'offlineSubscriptions' => CloudSubscription::with(['restaurant', 'plan'])->whereIn('status', ['trial', 'active', 'grace'])->latest()->get()
                 ->filter(fn ($subscription) => $subscription->restaurant?->status === 'active')->values(),
             'metrics' => [
@@ -137,6 +136,15 @@ class CloudManagementController extends Controller
         return back()->with('status', "{$restaurant->name} is now {$restaurant->status}.");
     }
 
+    public function renewalForm()
+    {
+        $this->ensureCloud();
+
+        // Visiting or refreshing an action URL must never renew a subscription.
+        return redirect()->route('superadmin.cloud.index')
+            ->with('status', 'Open Manage customer to review the plan and duration, then submit the renewal form.');
+    }
+
     public function renew(Request $request, CloudSubscription $subscription, CloudLicenseService $licenses, AuditService $audit)
     {
         $this->ensureCloud();
@@ -151,7 +159,7 @@ class CloudManagementController extends Controller
         CloudSubscriptionEvent::create(['cloud_subscription_id'=>$subscription->id,'event'=>$oldPlan===$newPlan?'renewed':'plan_changed','from_status'=>$old['status'],'to_status'=>'active','from_plan_id'=>$oldPlan,'to_plan_id'=>$newPlan,'effective_at'=>now(),'reason'=>$request->input('reason'),'created_by'=>$request->user()->id]);
         $plainKey = $licenses->issueKey($subscription->fresh());
         $audit->record($request, 'cloud_subscription.renewed', $subscription, $old, $subscription->fresh()->toArray());
-        return back()->with('status', 'Subscription renewed. Connected restaurants will receive the change at the next sync.')->with('issued_license_key', $plainKey);
+        return redirect()->route('superadmin.cloud.index', [], 303)->with('status', 'Subscription renewed. Connected restaurants will receive the change at the next sync.')->with('issued_license_key', $plainKey);
     }
 
     public function subscriptionStatus(Request $request, CloudSubscription $subscription, AuditService $audit)

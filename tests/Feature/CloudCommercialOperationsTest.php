@@ -117,6 +117,114 @@ class CloudCommercialOperationsTest extends TestCase
         }
     }
 
+    public function test_opening_renewal_url_only_returns_to_the_dashboard_without_renewing(): void
+    {
+        [, $subscription] = $this->restaurantWithSubscription();
+        $before = $subscription->fresh()->getAttributes();
+        $this->actingAs($this->superadmin());
+
+        foreach (['GET', 'HEAD'] as $method) {
+            $this->call($method, route('superadmin.cloud.subscriptions.renew', $subscription))
+                ->assertRedirect(route('superadmin.cloud.index'));
+            $this->assertSame($before, $subscription->fresh()->getAttributes());
+            $this->assertSame(0, $subscription->licenseKeys()->count());
+            $this->assertSame(0, $subscription->events()->count());
+            $this->assertDatabaseMissing('audit_logs', ['action' => 'cloud_subscription.renewed']);
+        }
+    }
+
+    public function test_renewal_browser_redirect_is_protected_by_authentication_and_role(): void
+    {
+        [, $subscription] = $this->restaurantWithSubscription();
+        $url = route('superadmin.cloud.subscriptions.renew', $subscription);
+        $this->get($url)->assertRedirect(route('login'));
+        $role = Role::firstOrCreate(['name' => 'admin'], ['display_name' => 'Administrator']);
+        $admin = User::create(['role_id' => $role->id, 'name' => 'Admin', 'username' => 'renew'.Str::random(5), 'password' => 'password123', 'is_active' => true]);
+        $this->actingAs($admin)->get($url)->assertForbidden();
+        $this->assertSame(0, $subscription->licenseKeys()->count());
+    }
+
+    public function test_renewal_success_redirects_to_a_get_page_even_with_action_as_referer(): void
+    {
+        [, $subscription] = $this->restaurantWithSubscription();
+        $url = route('superadmin.cloud.subscriptions.renew', $subscription);
+        $this->actingAs($this->superadmin())->from($url)->post($url, [
+            'commercial_plan_id' => (string) $subscription->commercial_plan_id,
+            'duration_days' => '30', 'reason' => 'Approved renewal',
+        ])->assertStatus(303)->assertRedirect(route('superadmin.cloud.index'));
+        $this->assertSame(1, $subscription->licenseKeys()->count());
+    }
+
+    public function test_customer_dashboard_paginates_and_preserves_filters_without_hiding_global_totals(): void
+    {
+        $customers = collect();
+        for ($number = 0; $number < 25; $number++) {
+            $restaurant = $this->restaurant();
+            $restaurant->update(['name' => sprintf('Paging customer %02d', $number)]);
+            $customers->push($restaurant);
+        }
+        $this->actingAs($this->superadmin());
+        $response = $this->get(route('superadmin.cloud.index', ['q' => 'Paging', 'status' => 'active']));
+        $response->assertOk()->assertViewHas('restaurants', fn ($page) =>
+            $page instanceof \Illuminate\Pagination\LengthAwarePaginator
+            && $page->total() === 25 && $page->count() === 20
+            && $page->first()->id === $customers->last()->id
+        )->assertViewHas('metrics', fn ($metrics) => $metrics['customers'] === 25)
+            ->assertSee('Customer pages')->assertSee('q=Paging', false)->assertSee('page=2', false)
+            ->assertSee('Paging customer 24')->assertDontSee('Paging customer 00');
+
+        $this->get(route('superadmin.cloud.index', ['q' => 'Paging', 'status' => 'active', 'page' => 2]))
+            ->assertOk()->assertViewHas('restaurants', fn ($page) => $page->count() === 5)
+            ->assertSee('Paging customer 00')->assertDontSee('Paging customer 24');
+    }
+
+    public function test_customer_dashboard_fetches_only_the_eight_latest_events_per_subscription(): void
+    {
+        $subscriptionIds = [];
+        for ($customer = 0; $customer < 2; $customer++) {
+            [, $subscription] = $this->restaurantWithSubscription();
+            $subscriptionIds[] = $subscription->id;
+            for ($number = 0; $number < 12; $number++) {
+                $subscription->events()->create([
+                    'event' => 'status_changed', 'effective_at' => now(),
+                    'created_at' => now()->addSeconds($number), 'reason' => 'History '.$number,
+                ]);
+            }
+        }
+
+        $this->actingAs($this->superadmin())->get(route('superadmin.cloud.index'))
+            ->assertOk()->assertViewHas('restaurants', function ($restaurants) use ($subscriptionIds) {
+                $loaded = $restaurants->flatMap(fn ($restaurant) => $restaurant->subscriptions);
+                return $loaded->count() === count($subscriptionIds) && $loaded->every(fn ($subscription) =>
+                    $subscription->events->count() === 8 && $subscription->events->first()->reason === 'History 11'
+                );
+            })->assertSee('History 11')->assertDontSee('History 0');
+        $this->assertDatabaseCount('cloud_subscription_events', 24);
+    }
+
+    public function test_dashboard_query_count_does_not_grow_with_each_customer(): void
+    {
+        $this->restaurantWithSubscription();
+        $this->actingAs($this->superadmin())->get(route('superadmin.cloud.index'))->assertOk();
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        try {
+            \Illuminate\Support\Facades\DB::flushQueryLog();
+            $this->get(route('superadmin.cloud.index'))->assertOk();
+            $singleCount = count(\Illuminate\Support\Facades\DB::getQueryLog());
+            for ($customer = 1; $customer < 20; $customer++) {
+                $this->restaurantWithSubscription();
+            }
+            \Illuminate\Support\Facades\DB::flushQueryLog();
+            $this->get(route('superadmin.cloud.index'))->assertOk();
+            $manyCount = count(\Illuminate\Support\Facades\DB::getQueryLog());
+            $this->assertLessThanOrEqual($singleCount + 2, $manyCount,
+                "Dashboard queries increased from {$singleCount} to {$manyCount}.");
+        } finally {
+            \Illuminate\Support\Facades\DB::disableQueryLog();
+            \Illuminate\Support\Facades\DB::flushQueryLog();
+        }
+    }
+
     public function test_invoice_and_payment_are_recorded_and_invoice_becomes_paid(): void
     {
         [$restaurant,$subscription] = $this->restaurantWithSubscription();

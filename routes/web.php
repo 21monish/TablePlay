@@ -65,6 +65,7 @@ Route::prefix('superadmin')->name('superadmin.')->middleware(['auth', 'privilege
     Route::post('cloud/restaurants', [CloudManagementController::class, 'storeRestaurant'])->name('cloud.restaurants.store');
     Route::put('cloud/restaurants/{restaurant}', [CloudManagementController::class, 'updateRestaurant'])->name('cloud.restaurants.update');
     Route::post('cloud/restaurants/{restaurant}/status', [CloudManagementController::class, 'restaurantStatus'])->name('cloud.restaurants.status');
+    Route::get('cloud/subscriptions/{subscription}/renew', [CloudManagementController::class, 'renewalForm'])->name('cloud.subscriptions.renew.form');
     Route::post('cloud/subscriptions/{subscription}/renew', [CloudManagementController::class, 'renew'])->name('cloud.subscriptions.renew');
     Route::post('cloud/subscriptions/{subscription}/status', [CloudManagementController::class, 'subscriptionStatus'])->name('cloud.subscriptions.status');
     Route::post('cloud/subscriptions/{subscription}/schedule', [CloudManagementController::class, 'scheduleSubscription'])->name('cloud.subscriptions.schedule');
