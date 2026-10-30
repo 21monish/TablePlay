@@ -50,6 +50,8 @@ Route::prefix('v1')->group(function () {
             Route::post('tables',[AdminStaffController::class,'storeTable']); Route::put('tables/{table}',[AdminStaffController::class,'updateTable']); Route::delete('tables/{table}',[AdminStaffController::class,'destroyTable']);
             Route::post('pairings',[AdminStaffController::class,'pairDevice']); Route::post('pairings/{pairing}/unpair',[AdminStaffController::class,'unpairDevice']);
             Route::post('staff',[AdminStaffController::class,'storeUser']); Route::post('staff/{user}/toggle',[AdminStaffController::class,'toggleUser']);
+            Route::put('staff/{user}', [\App\Http\Controllers\Api\StaffAccountController::class, 'update']);
+            Route::delete('staff/{user}', [\App\Http\Controllers\Api\StaffAccountController::class, 'destroy']);
             Route::delete('menu-items/{menuItem}', [AdminStaffController::class, 'destroyMenuItem']);
             Route::post('categories',[AdminStaffController::class,'storeCategory']); Route::post('menu-items',[AdminStaffController::class,'storeMenuItem']); Route::put('menu-items/{menuItem}',[AdminStaffController::class,'updateMenuItem']); Route::post('menu-items/{menuItem}/image',[AdminStaffController::class,'uploadMenuItemImage']); Route::post('menu-items/{menuItem}/toggle',[AdminStaffController::class,'toggleMenuItem']);
             Route::put('settings',[AdminStaffController::class,'updateSettings']); Route::post('settings/branding',[AdminStaffController::class,'updateBranding']); Route::post('games',[AdminStaffController::class,'storeGame'])->middleware('entitlement:games'); Route::post('games/{game}/toggle',[AdminStaffController::class,'toggleGame'])->middleware('entitlement:games');

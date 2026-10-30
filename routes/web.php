@@ -117,6 +117,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'privileged.verified
         ->where('filename', '[A-Za-z0-9._-]+')->name('automation.backups.download');
 
     Route::post('staff', [AdminController::class, 'storeUser'])->name('staff.store');
+    Route::get('staff/{user}/edit', [\App\Http\Controllers\Web\StaffAccountController::class, 'edit'])->name('staff.edit');
+    Route::put('staff/{user}', [\App\Http\Controllers\Web\StaffAccountController::class, 'update'])->name('staff.update');
+    Route::delete('staff/{user}', [\App\Http\Controllers\Web\StaffAccountController::class, 'destroy'])->name('staff.destroy');
     Route::post('staff/{user}/toggle', [AdminController::class, 'toggleUser'])->name('staff.toggle');
     Route::post('tables', [AdminController::class, 'storeTable'])->name('tables.store');
     Route::put('tables/{table}', [AdminController::class, 'updateTable'])->name('tables.update');

@@ -26,17 +26,19 @@
             <div class="card__header"><div><h2>Game timers</h2><p>Server-controlled access by table</p></div><span class="timer-live"><i></i> Live</span></div>
             <div class="card__body game-timer-list">
                 @forelse($games as $game)
-                    <article class="game-timer" data-game-timer data-expires="{{ $game->expires_at->timestamp }}">
+                    @php($tableOpen = $game->tableSession->status === 'open')
+                    @php($billingLocked = $game->tableSession->status === 'billing')
+                    <article class="game-timer" @if($tableOpen) data-game-timer data-expires="{{ $game->expires_at->timestamp }}" @else data-game-locked @endif>
                         <div class="game-timer__top">
-                            <div class="game-timer__identity"><span class="quick-list__icon"><x-icon name="game" :size="18" /></span><span><strong>{{ $game->tableSession->diningTable->table_code }}</strong><small>Game access unlocked</small></span></div>
-                            <span class="game-countdown">Calculating&hellip;</span>
+                            <div class="game-timer__identity"><span class="quick-list__icon"><x-icon name="game" :size="18" /></span><span><strong>{{ $game->tableSession->diningTable->table_code }}</strong><small>{{ $tableOpen ? 'Game access unlocked' : ($billingLocked ? 'Locked during billing' : 'Table visit is not open') }}</small></span></div>
+                            <span class="game-countdown">@if($tableOpen)Calculating&hellip;@else Locked @endif</span>
                         </div>
-                        <div class="game-timer__track"><span></span></div>
+                        @if($tableOpen)<div class="game-timer__track"><span></span></div>@else<p class="muted">{{ $billingLocked ? 'This table is in billing. Game time cannot be extended.' : 'This table visit is not open. Game time cannot be extended.' }}</p>@endif
                         <div class="game-timer__actions">
                             @foreach([15, 30] as $minutes)
-                                <form method="post" action="{{ route('counter.games.extend',$game) }}">@csrf<input type="hidden" name="minutes" value="{{ $minutes }}"><button class="button button--secondary button--small" type="submit">+{{ $minutes }} min</button></form>
+                                <form method="post" action="{{ route('counter.games.extend',$game) }}">@csrf<input type="hidden" name="minutes" value="{{ $minutes }}"><button class="button button--secondary button--small" type="submit" @disabled(!$tableOpen)>+{{ $minutes }} min</button></form>
                             @endforeach
-                            <form class="inline-form game-timer__custom" method="post" action="{{ route('counter.games.extend',$game) }}">@csrf<input aria-label="Custom extension minutes" type="number" name="minutes" value="15" min="1" max="240"><button class="button button--small" type="submit">Extend</button></form>
+                            <form class="inline-form game-timer__custom" method="post" action="{{ route('counter.games.extend',$game) }}">@csrf<input aria-label="Custom extension minutes" type="number" name="minutes" value="15" min="1" max="240" @disabled(!$tableOpen)><button class="button button--small" type="submit" @disabled(!$tableOpen)>Extend</button></form>
                             <form method="post" action="{{ route('counter.games.stop',$game) }}">@csrf<button class="button button--danger button--small" data-confirm="Lock games for {{ $game->tableSession->diningTable->table_code }}?">Stop</button></form>
                         </div>
                     </article>

@@ -70,13 +70,20 @@ class GameAccessService
             if (
                 $locked->status !== 'active'
                 || $locked->expires_at->isPast()
-                || $locked->tableSession->status !== 'open'
             ) {
                 if ($locked->status === 'active' && $locked->expires_at->isPast()) {
                     $locked->update(['status' => 'expired', 'stopped_at' => now()]);
                 }
 
                 return null;
+            }
+
+            if ($locked->tableSession->status !== 'open') {
+                throw ValidationException::withMessages([
+                    'game_session' => $locked->tableSession->status === 'billing'
+                        ? 'This table is in billing. Game time cannot be extended.'
+                        : 'This table visit is not open. Game time cannot be extended.',
+                ]);
             }
 
             $locked->update(['expires_at' => $locked->expires_at->copy()->addMinutes($minutes)]);

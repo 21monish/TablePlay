@@ -14,6 +14,7 @@ import '../theme/tableplay_theme.dart';
 import '../widgets/common.dart';
 import 'plan_controls.dart';
 import 'admin_experience.dart';
+import 'staff_account_editor.dart';
 
 class StaffHome extends StatefulWidget {
   const StaffHome({
@@ -47,6 +48,9 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
   int _operationsSection = 0;
   String _catalogQuery = '', _catalogAvailability = 'all';
   final _catalogSearch = TextEditingController();
+  final Set<int> _staffBusy = {};
+  final Set<int> _staffNetworkBusy = {};
+  bool _staffEditorOpen = false;
   Map<String, dynamic> branding = {};
   Map<String, dynamic> entitlements = {};
   DateTime? _brandingLoadedAt;
@@ -1695,7 +1699,9 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
         '${staff.where((value) => value['is_active'] == true).length} active',
         [
           FilledButton.icon(
-            onPressed: () => _addStaff(roles),
+            onPressed: roles.isEmpty || _staffEditorOpen
+                ? null
+                : () => _addStaff(roles),
             icon: const Icon(Icons.person_add_alt_1_rounded),
             label: const Text('Add staff'),
           ),
@@ -1703,38 +1709,123 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
       ),
       ...staff.map((value) {
         final user = value as Map;
+        final id = (user['id'] as num).toInt();
+        final self = id == widget.store.userId;
+        final busy = _staffBusy.contains(id);
+        final name = '${user['name'] ?? ''}';
         return Card(
-          child: SwitchListTile(
-            secondary: CircleAvatar(
-              child: Text('${user['name']}'.substring(0, 1).toUpperCase()),
-            ),
-            value: user['is_active'] == true,
-            onChanged: user['id'] == widget.store.userId
-                ? null
-                : (_) async {
-                    if (await confirm(
-                      '${user['is_active'] == true ? 'Disable' : 'Enable'} ${user['name']}?',
-                      'This changes access for the ${user['role']['display_name']} account.',
-                      danger: user['is_active'] == true,
-                    )) {
-                      act(
-                        '/admin/staff/${user['id']}/toggle',
-                        success: 'Staff access updated.',
-                      );
-                    }
-                  },
-            title: Text(
-              '${user['name']}',
-              style: const TextStyle(fontWeight: FontWeight.w900),
-            ),
-            subtitle: Text(
-              '${user['role']['display_name']} · @${user['username']}\n${user['email'] ?? user['mobile'] ?? 'Local account'}',
-            ),
-            isThreeLine: true,
+          child: Column(
+            children: [
+              SwitchListTile(
+                secondary: CircleAvatar(
+                  child: Text(
+                    name.isEmpty ? '?' : name.substring(0, 1).toUpperCase(),
+                  ),
+                ),
+                value: user['is_active'] == true,
+                onChanged: self || busy ? null : (_) => _staffAction(user),
+                title: Text(
+                  name,
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                subtitle: Text(
+                  '${user['role']['display_name']} · @${user['username']}\n${user['email'] ?? user['mobile'] ?? 'Local account'}',
+                ),
+                isThreeLine: true,
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: busy || _staffEditorOpen
+                          ? null
+                          : () => _addStaff(roles, user: user),
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('Edit'),
+                    ),
+                    if (!self)
+                      OutlinedButton.icon(
+                        onPressed: busy
+                            ? null
+                            : () => _staffAction(user, delete: true),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: TablePlayColors.danger,
+                        ),
+                        icon: const Icon(Icons.delete_outline_rounded),
+                        label: const Text('Delete'),
+                      ),
+                    if (self) const Text('Current account'),
+                    if (_staffNetworkBusy.contains(id))
+                      const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
         );
       }),
     ]);
+  }
+
+  Future<void> _staffAction(Map user, {bool delete = false}) async {
+    final id = (user['id'] as num).toInt();
+    if (_staffBusy.contains(id) || id == widget.store.userId) return;
+    setState(() => _staffBusy.add(id));
+    try {
+      final approved = await confirm(
+        delete
+            ? 'Delete ${user['name']}?'
+            : '${user['is_active'] == true ? 'Disable' : 'Enable'} ${user['name']}?',
+        delete
+            ? 'Sign-in access will be removed. Past orders, bills and audit records will be kept.'
+            : 'This changes access for the ${user['role']['display_name']} account.',
+        action: delete ? 'Delete account' : 'Confirm',
+        danger: delete || user['is_active'] == true,
+      );
+      if (!approved || !mounted) return;
+      setState(() => _staffNetworkBusy.add(id));
+      if (delete) {
+        await api.delete('/admin/staff/$id');
+      } else {
+        await api.post('/admin/staff/$id/toggle');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              delete
+                  ? 'Staff account deleted. History kept.'
+                  : 'Staff access updated.',
+            ),
+          ),
+        );
+      }
+      await load(silent: true, force: true);
+    } catch (exception) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(exception.toString()),
+            backgroundColor: TablePlayColors.danger,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _staffBusy.remove(id);
+          _staffNetworkBusy.remove(id);
+        });
+      }
+    }
   }
 
   Widget _adminCatalog() {
@@ -2878,117 +2969,47 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _addStaff(List roles) async {
-    if (roles.isEmpty) return;
-    final name = TextEditingController(),
-        username = TextEditingController(),
-        email = TextEditingController(),
-        mobile = TextEditingController(),
-        password = TextEditingController(),
-        pin = TextEditingController();
-    int roleId = (roles.first['id'] as num).toInt();
-    bool showPassword = false, showPin = false;
-    final result = await _adminForm<Map<String, dynamic>>(
-      'Create staff account',
-      fields: (setSheet) => [
-        DropdownButtonFormField<int>(
-          initialValue: roleId,
-          decoration: const InputDecoration(labelText: 'Role'),
-          items: roles
-              .map(
-                (value) => DropdownMenuItem<int>(
-                  value: (value['id'] as num).toInt(),
-                  child: Text('${value['display_name']}'),
-                ),
-              )
-              .toList(),
-          onChanged: (value) => setSheet(() => roleId = value!),
+  Future<void> _addStaff(List roles, {Map? user}) async {
+    if (roles.isEmpty || _staffEditorOpen) return;
+    setState(() => _staffEditorOpen = true);
+    String? warning;
+    try {
+      final saved = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        isDismissible: false,
+        enableDrag: false,
+        builder: (_) => StaffAccountEditor(
+          roles: roles,
+          user: user,
+          currentUserId: widget.store.userId,
+          onSave: (body) async {
+            final result = user == null
+                ? await api.post('/admin/staff', body)
+                : await api.put('/admin/staff/${user['id']}', body);
+            if (result is Map) warning = result['warning']?.toString();
+          },
         ),
-        _gap(),
-        TextField(
-          controller: name,
-          decoration: const InputDecoration(labelText: 'Full name'),
-        ),
-        _gap(),
-        TextField(
-          controller: username,
-          decoration: const InputDecoration(labelText: 'Username'),
-        ),
-        _gap(),
-        TextField(
-          controller: email,
-          keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(labelText: 'Email (optional)'),
-        ),
-        _gap(),
-        TextField(
-          controller: mobile,
-          keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(labelText: 'Mobile (optional)'),
-        ),
-        _gap(),
-        TextField(
-          controller: password,
-          obscureText: !showPassword,
-          inputFormatters: [LengthLimitingTextInputFormatter(255)],
-          decoration: InputDecoration(
-            labelText: 'Password',
-            helperText: 'At least 8 characters',
-            suffixIcon: IconButton(
-              tooltip: showPassword ? 'Hide password' : 'Show password',
-              onPressed: () => setSheet(() => showPassword = !showPassword),
-              icon: Icon(
-                showPassword
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-              ),
-            ),
-          ),
-        ),
-        _gap(),
-        TextField(
-          controller: pin,
-          obscureText: !showPin,
-          keyboardType: TextInputType.number,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(12),
-          ],
-          decoration: InputDecoration(
-            labelText: 'PIN (optional)',
-            helperText: '4 to 12 digits',
-            suffixIcon: IconButton(
-              tooltip: showPin ? 'Hide PIN' : 'Show PIN',
-              onPressed: () => setSheet(() => showPin = !showPin),
-              icon: Icon(
-                showPin
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-              ),
-            ),
-          ),
-        ),
-      ],
-      value: () => {
-        'role_id': roleId,
-        'name': name.text.trim(),
-        'username': username.text.trim(),
-        'email': email.text.trim(),
-        'mobile': mobile.text.trim(),
-        'password': password.text,
-        'pin': pin.text.trim(),
-      },
-      submitLabel: 'Create account',
-    );
-    for (final controller in [name, username, email, mobile, password, pin]) {
-      controller.dispose();
-    }
-    if (result != null) {
-      await act(
-        '/admin/staff',
-        body: result,
-        success: 'Staff account created.',
       );
+      if (saved == true && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              warning ??
+                  (user == null
+                      ? 'Staff account created.'
+                      : 'Staff account updated.'),
+            ),
+            backgroundColor: warning == null
+                ? TablePlayColors.success
+                : TablePlayColors.warning,
+          ),
+        );
+        await load(silent: true, force: true);
+      }
+    } finally {
+      if (mounted) setState(() => _staffEditorOpen = false);
     }
   }
 
@@ -3875,11 +3896,11 @@ class _StaffHomeState extends State<StaffHome> with WidgetsBindingObserver {
         }),
       ],
       if (_featureAllowed('games') && (index == 0 || index == 4)) ...[
-        SectionTitle('Game timers', subtitle: '${games.length} active'),
+        SectionTitle('Game timers', subtitle: '${games.length} tracked'),
         if (games.isEmpty) _empty('No active game timers'),
         ...games.map((value) {
           final game = Map<String, dynamic>.from(value as Map);
-          return _GameTimerCard(
+          return GameTimerCard(
             game: game,
             onExtend: (minutes) => act(
               '/counter/game-sessions/${game['id']}/extend',
@@ -4933,8 +4954,9 @@ class _HelpBubble extends StatelessWidget {
   }
 }
 
-class _GameTimerCard extends StatefulWidget {
-  const _GameTimerCard({
+class GameTimerCard extends StatefulWidget {
+  const GameTimerCard({
+    super.key,
     required this.game,
     required this.onExtend,
     required this.onCustom,
@@ -4947,10 +4969,10 @@ class _GameTimerCard extends StatefulWidget {
   final Future<void> Function() onStop;
 
   @override
-  State<_GameTimerCard> createState() => _GameTimerCardState();
+  State<GameTimerCard> createState() => _GameTimerCardState();
 }
 
-class _GameTimerCardState extends State<_GameTimerCard> {
+class _GameTimerCardState extends State<GameTimerCard> {
   Timer? ticker;
   int remaining = 0;
   bool working = false;
@@ -4965,7 +4987,7 @@ class _GameTimerCardState extends State<_GameTimerCard> {
   }
 
   @override
-  void didUpdateWidget(covariant _GameTimerCard oldWidget) {
+  void didUpdateWidget(covariant GameTimerCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.game['expires_at'] != widget.game['expires_at']) {
       _calculateRemaining();
@@ -5010,8 +5032,24 @@ class _GameTimerCardState extends State<_GameTimerCard> {
   Widget build(BuildContext context) {
     final table =
         widget.game['table_session']?['dining_table']?['table_code'] ?? 'Table';
+    final tableStatus = widget.game['table_session']?['status'];
+    final tableOpen = tableStatus == 'open';
+    final billingLocked = tableStatus == 'billing';
+    final timerLive = widget.game['status'] == 'active' && remaining > 0;
+    final canExtend = tableOpen && timerLive;
+    final lockMessage = billingLocked
+        ? 'Locked during billing'
+        : !tableOpen
+        ? 'Table visit is not open'
+        : !timerLive
+        ? 'Game timer ended'
+        : null;
     final warning = remaining <= 300;
-    final color = warning ? const Color(0xffb66b0b) : TablePlayColors.success;
+    final color = !canExtend
+        ? TablePlayColors.muted
+        : warning
+        ? const Color(0xffb66b0b)
+        : TablePlayColors.success;
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Padding(
@@ -5045,9 +5083,9 @@ class _GameTimerCardState extends State<_GameTimerCard> {
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const Text(
-                        'Server-controlled access',
-                        style: TextStyle(
+                      Text(
+                        lockMessage ?? 'Server-controlled access',
+                        style: const TextStyle(
                           color: TablePlayColors.muted,
                           fontSize: 10.5,
                         ),
@@ -5059,7 +5097,7 @@ class _GameTimerCardState extends State<_GameTimerCard> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      clock,
+                      canExtend ? clock : (timerLive ? 'Locked' : 'Ended'),
                       style: TextStyle(
                         color: color,
                         fontSize: 20,
@@ -5068,7 +5106,9 @@ class _GameTimerCardState extends State<_GameTimerCard> {
                       ),
                     ),
                     Text(
-                      remaining == 0 ? 'ENDED' : 'REMAINING',
+                      billingLocked
+                          ? 'BILLING'
+                          : (canExtend ? 'REMAINING' : 'LOCKED'),
                       style: TextStyle(
                         color: color,
                         fontSize: 8,
@@ -5085,7 +5125,7 @@ class _GameTimerCardState extends State<_GameTimerCard> {
               borderRadius: BorderRadius.circular(99),
               child: LinearProgressIndicator(
                 minHeight: 5,
-                value: remaining == 0 ? 0 : null,
+                value: canExtend ? null : 0,
                 color: color,
                 backgroundColor: color.withValues(alpha: .12),
               ),
@@ -5096,26 +5136,26 @@ class _GameTimerCardState extends State<_GameTimerCard> {
               runSpacing: 8,
               children: [
                 OutlinedButton(
-                  onPressed: working || remaining == 0
+                  onPressed: working || !canExtend
                       ? null
                       : () => _run(() => widget.onExtend(15)),
                   child: const Text('+15 min'),
                 ),
                 OutlinedButton(
-                  onPressed: working || remaining == 0
+                  onPressed: working || !canExtend
                       ? null
                       : () => _run(() => widget.onExtend(30)),
                   child: const Text('+30 min'),
                 ),
                 OutlinedButton.icon(
-                  onPressed: working || remaining == 0
+                  onPressed: working || !canExtend
                       ? null
                       : () => _run(widget.onCustom),
                   icon: const Icon(Icons.more_time_rounded, size: 18),
                   label: const Text('Custom'),
                 ),
                 FilledButton.icon(
-                  onPressed: working || remaining == 0
+                  onPressed: working || !timerLive
                       ? null
                       : () => _run(widget.onStop),
                   icon: const Icon(Icons.stop_circle_outlined, size: 18),
